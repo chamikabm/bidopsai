@@ -30,7 +30,7 @@ BidOps.ai follows a modern, cloud-native architecture with separate frontend, ba
 
 ### API Layer
 
-- **GraphQL** API using modern GraphQL server (Apollo Server or similar)
+- **GraphQL** API using modern GraphQL server (Apollo Server)
 - **PostgreSQL** database with UUID primary keys
 - **Prisma** or similar ORM for database operations
 - **AWS Cognito** for authentication and user management
