@@ -1,3 +1,5 @@
+Web Application: bidops.ai
+
 Frontend:
 
 SignIn/SignUp Screen (/):
@@ -231,7 +233,7 @@ B. Once user click on the "Start" button following, UI shoul be change to the pr
 
 	6. Once the supervisor accepted the request it will pass the request detiails to the Parser Agent, paser agent will have access to postgress tool/mcp to access retrived the required details.
 		- Agent first mark the Parser AgentTask as InProgress, update the input_data and contine with the parsing task, for the parsing task the agent should accesss the Project and should get all the documents from the ProjectDocument records from the database.
-		- Once the agent retrived all the ProjectDocument documents from the database, it should retrive the locations and pass that to bedrock Data Automation tool to process the documents and save it onto a predefined location (S3), for that the agent will use use correct tools/mcp accordingly.
+		- Once the agent retrived all the ProjectDocument documents from the database, it should retrive the locations (i.e raw_file_location) and pass that to bedrock Data Automation tool to process the documents and save it onto a predefined location (S3), for that the agent will use use correct tools/mcp accordingly.
 		- Once the agent done with that task he will provide a feedback to the supervisor agent and update the Parser Agent Task details accordingly.
 		- Along with the above the agent should maintain the following propertise as and when the things are happenig:
 			%% User Id, who initiate the agent task - This should be updated by start of each task execution
@@ -241,12 +243,12 @@ B. Once user click on the "Start" button following, UI shoul be change to the pr
 	        %% User Id, who completed the agent task
 			uuid completed_by FK "" - Once the agent task is completed - this should be updated with user id of the last user who completed the agent task
 		- If there a failure it should update the AgentTask accordingly with error_message, error_log
-		- If the task is successfull, the agent should write the processed file location into the output_data and mark the AgentTask as completed, so that the supervisor and pickup and pass that to the Analysis Agent
+		- If the task is successfull, the agent should write the processed file location into the output_data and also should update the each ProjectDocument's processed_file_location accordingly and mark the AgentTask as completed, so that the supervisor and pickup and pass that to the Analysis Agent
 
 	7. Once the Parser Agent passed back to the Supervisor agent, he will analys the outcome and update the WorkflowExecution entries with last_updated_at, also if there's an error it should update error_message and error_log entries. If the parsing successful, the supervisor agent should ask Analysis Agent to work on the Analysis Agent Task. And should update the Project's progress_percentage value (Depending on how many agent tasks we have completed) and other related data.
 	8. Once the supervisor handsoff that to the Analysis Agent;
 		- Agent first mark the Analysis AgentTask as InProgress, update the input_data and contine with the Analysis task, for the Analysis task the agent should accesss the output for the previous Parse Agent tasks's output (output_data) from the database.
-		- Once agent retrives the document data (from the S3 file location) which was available in the Parser AgentTask output, then it should be used as the context to analyse and produced the following data in markdown format to be ready to present that to the user. And this markdown should contain following details:
+		- Once agent retrives the document data (from the S3 file location) which was available in the Parser ProjectDocument processed_file_location, then it should be used as the context to analyse and produced the following data in markdown format to be ready to present that to the user. And this markdown should contain following details:
 
 			a. Who is the Client (Name, Location, Domain, Contact Details)
 			b. Key Stakeholder and Their Roles
@@ -747,4 +749,3 @@ B. Once user click on the "Start" button following, UI shoul be change to the pr
 
 
 - For evey handsoffs, supervisor upgates, client should receive evenstram updates, so that the in the frontend we can show the correct status updates, loading screens on the chat interface and the project interface.
-
