@@ -66,19 +66,12 @@ graph TB
             
             subgraph "Private Data Subnets"
                 subgraph "AZ-1: us-east-1a<br/>10.0.31.0/24"
-                    RDSProxy1[RDS Proxy<br/>Endpoint AZ-1]
-                    RDSPrimary[(RDS Primary<br/>PostgreSQL)]
-                    OS1[OpenSearch<br/>Node 1]
-                    OS2[OpenSearch<br/>Node 2]
+                    DataSubnet1[Data Subnet AZ-1<br/>For Managed Service ENIs]
                 end
                 
                 subgraph "AZ-2: us-east-1b<br/>10.0.32.0/24"
-                    RDSProxy2[RDS Proxy<br/>Endpoint AZ-2]
-                    RDSStandby[(RDS Standby<br/>PostgreSQL)]
-                    OS3[OpenSearch<br/>Node 3]
+                    DataSubnet2[Data Subnet AZ-2<br/>For Managed Service ENIs]
                 end
-                
-                RDSPrimary -.->|Synchronous<br/>Replication| RDSStandby
             end
             
             subgraph "VPC Endpoints"
@@ -94,21 +87,35 @@ graph TB
     end
     
     subgraph "AWS Managed Services - Regional"
-        Bedrock[Bedrock Service<br/>Models + KB + BDA + Guardrails]
-        Cognito[Cognito<br/>User Pool]
+        subgraph "Database Services"
+            Aurora[Aurora Serverless v2<br/>PostgreSQL Cluster<br/>Writer: AZ-1a, Reader: AZ-1b<br/>Auto-scaling 0.5-16 ACUs]
+        end
+        
+        subgraph "Search Services"
+            OpenSearch[OpenSearch Service<br/>Managed Cluster<br/>Multi-AZ Deployment<br/>t3.small.search instances]
+        end
+        
+        subgraph "AI/ML Services"
+            Bedrock[Bedrock Service<br/>Models + KB + BDA + Guardrails]
+        end
+        
+        subgraph "Identity Services"
+            Cognito[Cognito<br/>User Pool + RBAC]
+        end
         
         subgraph "S3 Buckets"
             S3_KB[S3 Knowledge Base<br/>Source Data]
             S3_Logs[S3 Logs<br/>ALB + CloudWatch]
             S3_BDA[S3 BDA<br/>Input/Output]
+            S3_Docs[S3 Documents<br/>User Uploads]
         end
         
         subgraph "Container Registry"
-            ECR[ECR Repositories<br/>Image Scanning Enabled]
+            ECR[ECR Repositories<br/>Vulnerability Scanning Enabled]
         end
         
         subgraph "Configuration & Secrets"
-            Secrets[Secrets Manager<br/>RDS Credentials<br/>API Keys]
+            Secrets[Secrets Manager<br/>Aurora Credentials<br/>API Keys + Auto Rotation]
             SSM[SSM Parameter Store<br/>App Configuration<br/>Endpoints]
         end
         
@@ -139,25 +146,35 @@ graph TB
     BackendALB1B --> Backend2A
     BackendALB1B --> Backend2B
     
-    Backend1A --> RDSProxy1
-    Backend1B --> RDSProxy1
-    Backend2A --> RDSProxy2
-    Backend2B --> RDSProxy2
+    Backend1A --> Aurora
+    Backend1B --> Aurora
+    Backend2A --> Aurora
+    Backend2B --> Aurora
     
-    AgentCore --> RDSProxy1
-    AgentCore --> RDSProxy2
-    
-    RDSProxy1 --> RDSPrimary
-    RDSProxy2 --> RDSPrimary
-    RDSProxy1 --> RDSStandby
-    RDSProxy2 --> RDSStandby
+    AgentCore --> Aurora
     
     Backend1A --> Bedrock
     Backend1B --> Bedrock
     Backend2A --> Bedrock
     Backend2B --> Bedrock
     
+    Backend1A --> OpenSearch
+    Backend1B --> OpenSearch
+    Backend2A --> OpenSearch
+    Backend2B --> OpenSearch
+    
+    Backend1A --> S3_Docs
+    Backend1B --> S3_Docs
+    Backend2A --> S3_Docs
+    Backend2B --> S3_Docs
+    
     AgentCore --> Bedrock
+    AgentCore --> Aurora
+    AgentCore --> S3_KB
+    AgentCore --> S3_Docs
+    
+    Bedrock --> S3_KB
+    Bedrock --> OpenSearch
     
     %% Styling
     classDef az1 fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
@@ -169,11 +186,11 @@ graph TB
     classDef storage fill:#f0f4c3,stroke:#9e9d24,stroke-width:2px
     classDef security fill:#ffccbc,stroke:#d84315,stroke-width:2px
     
-    class BFF1A,BFF1B,Backend1A,Backend1B,RDSProxy1,RDSPrimary,OS1,OS2,ALB1A,BackendALB1A,NAT1,IGW1,AgentSubnet1 az1
-    class BFF2A,BFF2B,Backend2A,Backend2B,RDSProxy2,RDSStandby,OS3,ALB1B,BackendALB1B,AgentSubnet2 az2
+    class BFF1A,BFF1B,Backend1A,Backend1B,ALB1A,BackendALB1A,NAT1,IGW1,AgentSubnet1,DataSubnet1 az1
+    class BFF2A,BFF2B,Backend2A,Backend2B,ALB1B,BackendALB1B,AgentSubnet2,DataSubnet2 az2
     class ALB,BackendALB alb
-    class RDSPrimary,RDSStandby,OS1,OS2,OS3 data
+    class Aurora,OpenSearch data
     class AgentCore,Bedrock managed
     class VPCE_S3,VPCE_Bedrock,VPCE_Secrets,VPCE_SSM,VPCE_ECR_API,VPCE_ECR_DKR,VPCE_CW_Logs vpce
-    class S3_KB,S3_Logs,S3_BDA,ECR storage
+    class S3_KB,S3_Logs,S3_BDA,S3_Docs,ECR storage
     class Cognito,Secrets,SSM,CloudWatch,CloudTrail security
