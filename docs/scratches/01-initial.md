@@ -1,5 +1,26 @@
 Web Application: bidops.ai
 
+Visual Philosophy:
+
+Create a cutting-edge, future-forward design system that feels like a blend of financial trading platforms, AI-powered tools, and sci-fi interfaces. Think: Vercel's polish + Linear's precision + cyberpunk aesthetics + Bloomberg Terminal sophistication.
+
+## Core Framework & Libraries
+- Node 24+
+- React 19+ (v 19.2) with TypeScript 5.9+
+- Next.js 15+ (v15.5+) (App Router with Server Components)
+- TailwindCSS 4+ (v4.1+) (with CSS variables for theming)
+- Framer Motion 12+ (v12.23+) (for advanced animations)
+- TanStack Query v5 (v5.90 +) (server state)
+- Zustand v5 (v5.0+) (client state)
+- React Hook Form v7 (v7.64+) + Zod v4 (v4.1 +) (forms & validation)
+- TipTap v3 (v3.6+) (rich text editor)
+- Radix UI (unstyled accessible components)
+- AWS Amplify v6 - Gen 2 (v6.15+) (Cognito integration)
+
+## Other Libaries and Framwkrks
+- Select Additional UI libraries / framworks  accordingly for data/time prickets, notifictions, icons, drop zones, testing etc to match with the styling we are going to have for the application, but find the latest version of all.
+
+
 Frontend:
 
 SignIn/SignUp Screen (/):

@@ -1,0 +1,68 @@
+/* Futuristic Cyberpunk Theme Variables */
+.theme-futuristic {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 194 100% 50%;
+  --primary-foreground: 240 10% 3.9%;
+  --secondary: 271 100% 50%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 330 100% 50%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 194 100% 50%;
+  
+  /* Enhanced cyber colors */
+  --cyber-blue: 194 100% 60%;
+  --cyber-purple: 271 100% 60%;
+  --cyber-green: 120 100% 60%;
+  --cyber-pink: 330 100% 60%;
+  --cyber-yellow: 60 100% 60%;
+}
+
+/* Futuristic specific animations and effects */
+.theme-futuristic .cyber-grid {
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.theme-futuristic .neon-glow {
+  box-shadow: 
+    0 0 5px hsl(var(--cyber-blue)),
+    0 0 10px hsl(var(--cyber-blue)),
+    0 0 15px hsl(var(--cyber-blue)),
+    0 0 20px hsl(var(--cyber-blue));
+}
+
+.theme-futuristic .neon-text {
+  text-shadow: 
+    0 0 5px hsl(var(--cyber-blue)),
+    0 0 10px hsl(var(--cyber-blue)),
+    0 0 15px hsl(var(--cyber-blue));
+}
+
+.theme-futuristic .hologram {
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(0, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  background-size: 20px 20px;
+  animation: hologram-scan 3s linear infinite;
+}
+
+@keyframes hologram-scan {
+  0% { background-position: -20px 0; }
+  100% { background-position: 20px 0; }
+}

@@ -3,7 +3,7 @@ sequenceDiagram
     participant Frontend
     participant CoreAPI as core-api (GraphQL)
     participant S3 as S3 Storage
-    participant AgentCore as agent-core (FastAPI)
+    participant AgentCore as workflow-agents (FastAPI)
     participant Supervisor as Supervisor Agent
     participant Parser as Parser Agent
     participant Analysis as Analysis Agent
