@@ -197,4 +197,53 @@
   .animate-scale-in {
     @apply animate-scale-in;
   }
+  
+  /* Mobile-specific utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  .mobile-padding {
+    @apply px-4 py-3 md:px-6 md:py-4;
+  }
+  
+  .mobile-text {
+    @apply text-base md:text-sm;
+  }
+  
+  .mobile-heading {
+    @apply text-xl md:text-2xl;
+  }
+  
+  /* Thin scrollbar for mobile */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+  
+  /* Safe area padding for mobile devices */
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Prevent text selection on touch devices */
+  .no-select-touch {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 }

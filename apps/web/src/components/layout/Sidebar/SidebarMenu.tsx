@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { SidebarMenuItem, type MenuItem } from './SidebarMenuItem';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
+import { filterMenuItems } from '@/lib/permissions';
 
 const allMenuItems: MenuItem[] = [
   {
@@ -48,6 +50,7 @@ interface SidebarMenuProps {
 
 export function SidebarMenu({ collapsed }: SidebarMenuProps) {
   const { user } = useAuth();
+  const { hasAnyPermission } = usePermissions();
 
   // Filter menu items based on user permissions
   const filteredMenuItems = allMenuItems.filter((item) => {
@@ -59,11 +62,8 @@ export function SidebarMenu({ collapsed }: SidebarMenuProps) {
       return false;
     }
 
-    // Check if user has at least one of the required permissions
-    return item.requiredPermissions.some((permission) => {
-      const permKey = permission as keyof typeof user.permissions;
-      return user.permissions[permKey] === true;
-    });
+    // Use the permission hook to check access
+    return hasAnyPermission(item.requiredPermissions);
   });
 
   return (

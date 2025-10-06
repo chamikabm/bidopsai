@@ -42,8 +42,8 @@ const stepLabels: Record<AgentType, string> = {
 export function WorkflowProgress({ steps, currentStep }: WorkflowProgressProps) {
   return (
     <div className="w-full bg-card border-b">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto">
+      <div className="container mx-auto px-2 md:px-4 py-3 md:py-4">
+        <div className="flex items-center justify-between gap-1 md:gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-thin">
           {steps.map((step, index) => (
             <WorkflowStep
               key={step.agent}

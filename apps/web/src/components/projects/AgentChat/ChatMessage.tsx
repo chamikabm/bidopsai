@@ -51,19 +51,19 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        'flex gap-3 p-4 rounded-lg',
-        isUser ? 'bg-primary/5 ml-12' : 'bg-muted/50',
+        'flex gap-2 md:gap-3 p-3 md:p-4 rounded-lg',
+        isUser ? 'bg-primary/5 ml-8 md:ml-12' : 'bg-muted/50',
         isSystem && 'bg-blue-50 dark:bg-blue-950/20'
       )}
     >
-      <Avatar className={cn('h-8 w-8 shrink-0', isAgent && getAgentColor())}>
+      <Avatar className={cn('h-8 w-8 md:h-10 md:w-10 shrink-0', isAgent && getAgentColor())}>
         <AvatarFallback className={cn(isAgent && 'text-white')}>
           {getAgentIcon()}
         </AvatarFallback>
       </Avatar>
 
       <div className="flex-1 min-w-0 space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {message.agentType && (
             <Badge variant="secondary" className="text-xs">
               {message.agentType}
@@ -84,11 +84,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
 
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none text-sm md:text-base">
           {typeof message.content === 'string' ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           ) : (
-            <div>{JSON.stringify(message.content, null, 2)}</div>
+            <div className="overflow-x-auto">{JSON.stringify(message.content, null, 2)}</div>
           )}
         </div>
       </div>

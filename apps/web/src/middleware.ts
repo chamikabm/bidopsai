@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Next.js Middleware for route protection
- * 
+ *
  * Protects authenticated routes and redirects unauthenticated users
  * Note: Authentication state is managed client-side with AWS Amplify
  * This middleware provides basic route protection

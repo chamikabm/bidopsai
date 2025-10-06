@@ -1,19 +1,30 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardStats, useUserActiveProjects } from '@/hooks/queries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MainLayout } from '@/components/layout';
+import { StatsCards } from '@/components/dashboard/StatsCards';
+import { ActiveProjectsList } from '@/components/dashboard/ActiveProjects';
+import { Button } from '@/components/ui/button';
+import { Plus, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 /**
  * Dashboard Page
  * 
- * Protected route that displays user information
- * Demonstrates authentication and role-based access
+ * Protected route that displays dashboard statistics and active projects
+ * Features real-time updates and responsive design
  */
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  
+  // Fetch dashboard data with real-time updates
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats(user?.id || '');
+  const { data: projects, isLoading: projectsLoading, refetch: refetchProjects } = useUserActiveProjects(user?.id || '', 6);
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -37,19 +48,74 @@ export default function DashboardPage() {
     );
   }
 
+  const handleRefresh = () => {
+    refetchStats();
+    refetchProjects();
+  };
+
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-muted-foreground">Welcome back, {user.givenName}!</p>
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">Dashboard</h1>
+            <p className="mt-2 text-muted-foreground">
+              Welcome back, {user.givenName}!
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={statsLoading || projectsLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${(statsLoading || projectsLoading) ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={() => router.push('/projects/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
+          </div>
         </div>
 
+        {/* Statistics Cards */}
+        <StatsCards
+          stats={stats || { submittedBids: 0, wonBids: 0, totalValue: 0, activeProjects: 0 }}
+          isLoading={statsLoading}
+        />
+
+        {/* Active Projects Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Active Projects</h2>
+              <p className="text-sm text-muted-foreground">
+                Projects you're currently working on
+              </p>
+            </div>
+            {projects && projects.length > 0 && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/projects')}
+              >
+                View All
+              </Button>
+            )}
+          </div>
+          <ActiveProjectsList
+            projects={projects || []}
+            isLoading={projectsLoading}
+          />
+        </div>
+
+        {/* Quick Info Cards */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Welcome back!</CardTitle>
-              <CardDescription>Your account information</CardDescription>
+              <CardTitle>Account Information</CardTitle>
+              <CardDescription>Your profile details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
@@ -67,7 +133,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span className="font-semibold">Email Verified:</span>{' '}
-                {user.emailVerified ? 'Yes' : 'No'}
+                {user.emailVerified ? '✓ Yes' : '✗ No'}
               </div>
             </CardContent>
           </Card>
@@ -75,7 +141,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Permissions</CardTitle>
-              <CardDescription>Your role-based permissions</CardDescription>
+              <CardDescription>Your role-based access</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">

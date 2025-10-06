@@ -13,3 +13,6 @@ export * from './useKnowledgeBases';
 
 // Artifact hooks
 export * from './useArtifacts';
+
+// Dashboard hooks
+export * from './useDashboard';

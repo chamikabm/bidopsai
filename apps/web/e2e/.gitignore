@@ -1,0 +1,12 @@
+# Playwright Test Results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Screenshots and Videos
+*.png
+*.webm
+*.mp4
+
+# But keep example snapshots
+!*-expected.png

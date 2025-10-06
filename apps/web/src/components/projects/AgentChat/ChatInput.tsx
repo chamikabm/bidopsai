@@ -38,7 +38,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex gap-2 items-end">
+    <div className="flex gap-2 items-end w-full">
       <Textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -46,15 +46,15 @@ export function ChatInput({
         placeholder={placeholder}
         disabled={disabled}
         rows={3}
-        className="resize-none"
+        className="resize-none flex-1 text-base md:text-sm"
       />
       <Button
         onClick={handleSend}
         disabled={disabled || !message.trim()}
         size="icon"
-        className="shrink-0"
+        className="shrink-0 h-12 w-12 md:h-10 md:w-10"
       >
-        <Send className="h-4 w-4" />
+        <Send className="h-5 w-5 md:h-4 md:w-4" />
       </Button>
     </div>
   );

@@ -201,15 +201,15 @@ export function AgentChatInterface({
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader>
-        <CardTitle>Agent Workflow</CardTitle>
+      <CardHeader className="pb-3 md:pb-6">
+        <CardTitle className="text-lg md:text-xl">Agent Workflow</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4 min-h-0">
-        <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-          <div className="space-y-4">
+      <CardContent className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0 p-3 md:p-6">
+        <ScrollArea className="flex-1 pr-2 md:pr-4" ref={scrollRef}>
+          <div className="space-y-3 md:space-y-4">
             {messages.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Start the workflow by sending a message below.</p>
+              <div className="text-center py-8 md:py-12 text-muted-foreground px-4">
+                <p className="text-sm md:text-base">Start the workflow by sending a message below.</p>
               </div>
             )}
             {messages.map((message) => (
@@ -222,7 +222,7 @@ export function AgentChatInterface({
           </div>
         </ScrollArea>
 
-        <div className="border-t pt-4">
+        <div className="border-t pt-3 md:pt-4">
           <ChatInput
             onSend={handleSendMessage}
             disabled={isStreaming || isProcessing}

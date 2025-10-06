@@ -5,6 +5,17 @@ export interface AppError {
   code?: string | undefined;
   statusCode?: number | undefined;
   details?: unknown;
+  timestamp?: string;
+  context?: string;
+}
+
+export interface ErrorLogEntry {
+  error: AppError;
+  userAgent: string;
+  url: string;
+  timestamp: string;
+  userId?: string;
+  sessionId?: string;
 }
 
 export class ApplicationError extends Error {
@@ -165,4 +176,102 @@ export function isPermissionError(error: unknown): boolean {
     return error.statusCode === 403 || error.code === 'FORBIDDEN';
   }
   return false;
+}
+
+/**
+ * Log error to monitoring service
+ * TODO: Integrate with actual monitoring service (Sentry, DataDog, CloudWatch, etc.)
+ */
+export function logErrorToMonitoring(
+  error: unknown,
+  context?: string,
+  additionalData?: Record<string, unknown>
+): void {
+  const appError = handleError(error, context);
+  
+  const errorLog: ErrorLogEntry = {
+    error: {
+      ...appError,
+      timestamp: new Date().toISOString(),
+      context,
+    },
+    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+    url: typeof window !== 'undefined' ? window.location.href : 'server',
+    timestamp: new Date().toISOString(),
+    ...additionalData,
+  };
+
+  // Log to console in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error logged to monitoring:', errorLog);
+  }
+
+  // TODO: Send to monitoring service
+  // Example integrations:
+  // - Sentry.captureException(error, { contexts: { custom: errorLog } })
+  // - DataDog.logger.error(appError.message, errorLog)
+  // - AWS CloudWatch Logs
+}
+
+/**
+ * Create a user-friendly error message based on error type
+ */
+export function getUserFriendlyErrorMessage(error: unknown): string {
+  if (isNetworkError(error)) {
+    return 'Unable to connect to the server. Please check your internet connection and try again.';
+  }
+
+  if (isAuthError(error)) {
+    return 'Your session has expired. Please sign in again.';
+  }
+
+  if (isPermissionError(error)) {
+    return 'You do not have permission to perform this action.';
+  }
+
+  if (error instanceof ApplicationError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'An unexpected error occurred. Please try again.';
+}
+
+/**
+ * Enhanced error handler with monitoring integration
+ */
+export function handleErrorWithLogging(
+  error: unknown,
+  context?: string,
+  additionalData?: Record<string, unknown>
+): AppError {
+  const appError = handleError(error, context);
+  
+  // Log to monitoring service
+  logErrorToMonitoring(error, context, additionalData);
+  
+  return appError;
+}
+
+/**
+ * Display enhanced error toast with user-friendly message
+ */
+export function showEnhancedErrorToast(
+  error: unknown,
+  context?: string,
+  customMessage?: string
+) {
+  const friendlyMessage = customMessage || getUserFriendlyErrorMessage(error);
+  
+  toast({
+    variant: 'destructive',
+    title: 'Error',
+    description: friendlyMessage,
+  });
+
+  // Log to monitoring
+  logErrorToMonitoring(error, context);
 }

@@ -21,15 +21,15 @@ export function WorkflowStep({ agent, label, status, isActive, isLast }: Workflo
   const getStatusIcon = () => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-6 w-6 text-green-500" />;
+        return <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 text-green-500" />;
       case 'in_progress':
-        return <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />;
+        return <Loader2 className="h-5 w-5 md:h-6 md:w-6 text-blue-500 animate-spin" />;
       case 'failed':
-        return <AlertCircle className="h-6 w-6 text-red-500" />;
+        return <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-red-500" />;
       case 'waiting':
-        return <Clock className="h-6 w-6 text-orange-500" />;
+        return <Clock className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />;
       default:
-        return <Circle className="h-6 w-6 text-muted-foreground" />;
+        return <Circle className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />;
     }
   };
 
@@ -49,8 +49,8 @@ export function WorkflowStep({ agent, label, status, isActive, isLast }: Workflo
   };
 
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0">
-      <div className="flex flex-col items-center gap-1 min-w-0">
+    <div className="flex items-center gap-1 md:gap-2 flex-1 min-w-0">
+      <div className="flex flex-col items-center gap-0.5 md:gap-1 min-w-0">
         <div
           className={cn(
             'transition-all duration-300',
@@ -59,10 +59,10 @@ export function WorkflowStep({ agent, label, status, isActive, isLast }: Workflo
         >
           {getStatusIcon()}
         </div>
-        <div className="text-center min-w-0">
+        <div className="text-center min-w-0 max-w-[60px] md:max-w-none">
           <p
             className={cn(
-              'text-xs font-medium truncate',
+              'text-[10px] md:text-xs font-medium truncate',
               getStatusColor(),
               isActive && 'font-bold'
             )}
@@ -74,7 +74,7 @@ export function WorkflowStep({ agent, label, status, isActive, isLast }: Workflo
       {!isLast && (
         <div
           className={cn(
-            'h-0.5 flex-1 transition-colors duration-300',
+            'h-0.5 flex-1 min-w-[8px] md:min-w-[16px] transition-colors duration-300',
             status === 'completed' ? 'bg-green-500' : 'bg-muted'
           )}
         />

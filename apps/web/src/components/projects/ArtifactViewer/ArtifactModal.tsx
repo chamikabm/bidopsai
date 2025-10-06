@@ -105,10 +105,10 @@ export function ArtifactModal({
   const renderEditor = () => {
     if (!content) {
       return (
-        <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+        <div className="flex items-center justify-center h-[300px] md:h-[400px] text-muted-foreground">
           <div className="text-center">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No content available</p>
+            <FileText className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm md:text-base">No content available</p>
           </div>
         </div>
       );
@@ -121,7 +121,7 @@ export function ArtifactModal({
             content={content as { items: Array<{ id: string; question: string; proposedAnswer: string; pastAnswers?: Array<{ answer: string; source: string; date: string; reference?: string }> }> }}
             onChange={handleContentChange}
             editable={editable}
-            className="h-[500px]"
+            className="h-[400px] md:h-[500px]"
           />
         );
       case ArtifactCategory.DOCUMENT:
@@ -131,21 +131,21 @@ export function ArtifactModal({
             onChange={handleContentChange}
             editable={editable}
             placeholder="Start writing your document..."
-            className="max-h-[500px] overflow-auto"
+            className="max-h-[400px] md:max-h-[500px] overflow-auto"
           />
         );
       case ArtifactCategory.EXCEL:
         return (
-          <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+          <div className="flex items-center justify-center h-[300px] md:h-[400px] text-muted-foreground">
             <div className="text-center">
-              <p>Excel editor coming soon</p>
+              <p className="text-sm md:text-base">Excel editor coming soon</p>
             </div>
           </div>
         );
       default:
         return (
-          <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-            <p>Unsupported artifact type</p>
+          <div className="flex items-center justify-center h-[300px] md:h-[400px] text-muted-foreground">
+            <p className="text-sm md:text-base">Unsupported artifact type</p>
           </div>
         );
     }
@@ -153,22 +153,22 @@ export function ArtifactModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col w-[95vw] md:w-full p-4 md:p-6">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-xl">{artifact.name}</DialogTitle>
-              <DialogDescription className="flex items-center gap-2 mt-2">
-                <Badge variant="outline">{artifact.type}</Badge>
-                <Badge variant="outline">{artifact.category}</Badge>
+          <div className="flex items-start justify-between gap-2 md:gap-4">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg md:text-xl truncate">{artifact.name}</DialogTitle>
+              <DialogDescription className="flex items-center gap-1 md:gap-2 mt-2 flex-wrap">
+                <Badge variant="outline" className="text-xs">{artifact.type}</Badge>
+                <Badge variant="outline" className="text-xs">{artifact.category}</Badge>
                 {artifact.latestVersion && (
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-xs">
                     v{artifact.latestVersion.versionNumber}
                   </Badge>
                 )}
                 {hasChanges && (
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-                    Unsaved changes
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-xs">
+                    Unsaved
                   </Badge>
                 )}
               </DialogDescription>
@@ -180,32 +180,30 @@ export function ArtifactModal({
           {renderEditor()}
         </div>
 
-        <DialogFooter className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground">
-              {artifact.createdBy && (
-                <span>
-                  Created by {artifact.createdBy.firstName} {artifact.createdBy.lastName}
-                </span>
-              )}
-            </div>
+        <DialogFooter className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground order-2 md:order-1">
+            {artifact.createdBy && (
+              <span className="hidden md:inline">
+                Created by {artifact.createdBy.firstName} {artifact.createdBy.lastName}
+              </span>
+            )}
             {editable && <DraftVersionManager artifactId={artifact.id} />}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row gap-2 order-1 md:order-2">
             {editable && hasChanges && (
-              <Button variant="outline" onClick={handleResetToOriginal}>
+              <Button variant="outline" onClick={handleResetToOriginal} className="w-full md:w-auto">
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Discard Changes
+                <span className="md:inline">Discard</span>
               </Button>
             )}
-            <Button variant="outline" onClick={handleClose}>
+            <Button variant="outline" onClick={handleClose} className="w-full md:w-auto">
               <X className="h-4 w-4 mr-2" />
               Close
             </Button>
             {editable && onSave && (
-              <Button onClick={handleSave} disabled={!hasChanges}>
+              <Button onClick={handleSave} disabled={!hasChanges} className="w-full md:w-auto">
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                Save
               </Button>
             )}
           </div>
