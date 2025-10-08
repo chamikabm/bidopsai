@@ -1,0 +1,400 @@
+# ============================================
+# PROJECT MUTATIONS
+# ============================================
+
+# Create a new project
+mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    id
+    name
+    description
+    status
+    deadline
+    progressPercentage
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Update an existing project
+mutation UpdateProject($id: UUID!, $input: UpdateProjectInput!) {
+  updateProject(id: $id, input: $input) {
+    id
+    name
+    description
+    status
+    value
+    deadline
+    progressPercentage
+    updatedAt
+  }
+}
+
+# Delete a project
+mutation DeleteProject($id: UUID!) {
+  deleteProject(id: $id)
+}
+
+# Add a member to a project
+mutation AddProjectMember($projectId: UUID!, $userId: UUID!) {
+  addProjectMember(projectId: $projectId, userId: $userId) {
+    id
+    project {
+      id
+      name
+    }
+    user {
+      id
+      firstName
+      lastName
+      email
+    }
+    addedBy {
+      id
+      firstName
+      lastName
+    }
+    joinedAt
+  }
+}
+
+# Remove a member from a project
+mutation RemoveProjectMember($projectId: UUID!, $userId: UUID!) {
+  removeProjectMember(projectId: $projectId, userId: $userId)
+}
+
+# ============================================
+# PROJECT DOCUMENT MUTATIONS
+# ============================================
+
+# Create project document record after S3 upload
+mutation CreateProjectDocument($input: CreateProjectDocumentInput!) {
+  createProjectDocument(input: $input) {
+    id
+    projectId
+    fileName
+    filePath
+    fileType
+    fileSize
+    rawFileLocation
+    uploadedBy {
+      id
+      firstName
+      lastName
+    }
+    uploadedAt
+  }
+}
+
+# Update project document (e.g., add processed file location)
+mutation UpdateProjectDocument($id: UUID!, $input: UpdateProjectDocumentInput!) {
+  updateProjectDocument(id: $id, input: $input) {
+    id
+    processedFileLocation
+    metadata
+  }
+}
+
+# Delete a project document
+mutation DeleteProjectDocument($id: UUID!) {
+  deleteProjectDocument(id: $id)
+}
+
+# Generate presigned URLs for direct S3 upload
+mutation GeneratePresignedUrls($projectId: UUID!, $files: [PresignedUrlRequest!]!) {
+  generatePresignedUrls(projectId: $projectId, files: $files) {
+    url
+    fileName
+    expiresAt
+  }
+}
+
+# ============================================
+# KNOWLEDGE BASE MUTATIONS
+# ============================================
+
+# Create a new knowledge base
+mutation CreateKnowledgeBase($input: CreateKnowledgeBaseInput!) {
+  createKnowledgeBase(input: $input) {
+    id
+    name
+    description
+    scope
+    project {
+      id
+      name
+    }
+    documentCount
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Update a knowledge base
+mutation UpdateKnowledgeBase($id: UUID!, $name: String, $description: String) {
+  updateKnowledgeBase(id: $id, name: $name, description: $description) {
+    id
+    name
+    description
+    updatedAt
+  }
+}
+
+# Delete a knowledge base
+mutation DeleteKnowledgeBase($id: UUID!) {
+  deleteKnowledgeBase(id: $id)
+}
+
+# Upload a document to a knowledge base
+mutation UploadKnowledgeBaseDocument($input: UploadKnowledgeBaseDocumentInput!) {
+  uploadKnowledgeBaseDocument(input: $input) {
+    id
+    knowledgeBaseId
+    fileName
+    filePath
+    fileType
+    fileSize
+    s3Bucket
+    s3Key
+    uploadedBy {
+      id
+      firstName
+      lastName
+    }
+    uploadedAt
+  }
+}
+
+# Delete a knowledge base document
+mutation DeleteKnowledgeBaseDocument($id: UUID!) {
+  deleteKnowledgeBaseDocument(id: $id)
+}
+
+# ============================================
+# USER MUTATIONS
+# ============================================
+
+# Create a new user (also creates in Cognito)
+mutation CreateUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+    email
+    username
+    firstName
+    lastName
+    profileImageUrl
+    emailVerified
+    cognitoUserId
+    roles {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+# Update a user
+mutation UpdateUser($id: UUID!, $input: UpdateUserInput!) {
+  updateUser(id: $id, input: $input) {
+    id
+    firstName
+    lastName
+    profileImageUrl
+    preferredLanguage
+    themePreference
+    updatedAt
+  }
+}
+
+# Delete a user
+mutation DeleteUser($id: UUID!) {
+  deleteUser(id: $id)
+}
+
+# Assign a role to a user
+mutation AssignRole($userId: UUID!, $roleId: UUID!) {
+  assignRole(userId: $userId, roleId: $roleId) {
+    id
+    user {
+      id
+      firstName
+      lastName
+    }
+    role {
+      id
+      name
+    }
+    assignedAt
+  }
+}
+
+# Remove a role from a user
+mutation RemoveRole($userId: UUID!, $roleId: UUID!) {
+  removeRole(userId: $userId, roleId: $roleId)
+}
+
+# Update current user's profile
+mutation UpdateMyProfile($input: UpdateUserInput!) {
+  updateMyProfile(input: $input) {
+    id
+    firstName
+    lastName
+    profileImageUrl
+    preferredLanguage
+    themePreference
+    updatedAt
+  }
+}
+
+# ============================================
+# ARTIFACT MUTATIONS
+# ============================================
+
+# Create a new artifact
+mutation CreateArtifact($input: CreateArtifactInput!) {
+  createArtifact(input: $input) {
+    id
+    projectId
+    name
+    type
+    category
+    status
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    versions {
+      id
+      versionNumber
+      content
+    }
+  }
+}
+
+# Update artifact version (creates new version)
+mutation UpdateArtifactVersion($input: UpdateArtifactVersionInput!) {
+  updateArtifactVersion(input: $input) {
+    id
+    artifactId
+    versionNumber
+    content
+    location
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+  }
+}
+
+# Approve an artifact
+mutation ApproveArtifact($id: UUID!) {
+  approveArtifact(id: $id) {
+    id
+    status
+    approvedBy {
+      id
+      firstName
+      lastName
+    }
+    approvedAt
+  }
+}
+
+# Reject an artifact
+mutation RejectArtifact($id: UUID!) {
+  rejectArtifact(id: $id) {
+    id
+    status
+  }
+}
+
+# ============================================
+# AGENT CONFIGURATION MUTATIONS
+# ============================================
+
+# Update agent configuration
+mutation UpdateAgentConfiguration($input: UpdateAgentConfigurationInput!) {
+  updateAgentConfiguration(input: $input) {
+    id
+    agentType
+    modelName
+    temperature
+    maxTokens
+    systemPrompt
+    additionalParameters
+    enabled
+    updatedAt
+    updatedBy {
+      id
+      firstName
+      lastName
+    }
+  }
+}
+
+# ============================================
+# INTEGRATION MUTATIONS
+# ============================================
+
+# Update integration configuration
+mutation UpdateIntegration($input: UpdateIntegrationInput!) {
+  updateIntegration(input: $input) {
+    id
+    type
+    name
+    configuration
+    enabled
+    updatedAt
+  }
+}
+
+# Test integration connectivity
+mutation TestIntegration($type: IntegrationType!) {
+  testIntegration(type: $type)
+}
+
+# ============================================
+# NOTIFICATION MUTATIONS
+# ============================================
+
+# Mark a notification as read
+mutation MarkNotificationAsRead($id: UUID!) {
+  markNotificationAsRead(id: $id) {
+    id
+    read
+    readAt
+  }
+}
+
+# Mark all notifications as read
+mutation MarkAllNotificationsAsRead {
+  markAllNotificationsAsRead
+}
+
+# Delete a notification
+mutation DeleteNotification($id: UUID!) {
+  deleteNotification(id: $id)
+}
+
+# ============================================
+# SYSTEM MUTATIONS
+# ============================================
+
+# Update system settings
+mutation UpdateSystemSettings($settings: JSON!) {
+  updateSystemSettings(settings: $settings)
+}

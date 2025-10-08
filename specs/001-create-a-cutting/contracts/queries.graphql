@@ -1,0 +1,786 @@
+# ============================================
+# USER QUERIES
+# ============================================
+
+# Get current authenticated user
+query Me {
+  me {
+    id
+    email
+    username
+    firstName
+    lastName
+    profileImageUrl
+    preferredLanguage
+    themePreference
+    emailVerified
+    createdAt
+    updatedAt
+    lastLogin
+    cognitoUserId
+    roles {
+      id
+      name
+      description
+      permissions {
+        id
+        resource
+        action
+      }
+    }
+  }
+}
+
+# Get single user by ID
+query GetUser($id: UUID!) {
+  user(id: $id) {
+    id
+    email
+    username
+    firstName
+    lastName
+    profileImageUrl
+    preferredLanguage
+    themePreference
+    emailVerified
+    createdAt
+    updatedAt
+    lastLogin
+    cognitoUserId
+    roles {
+      id
+      name
+      description
+    }
+    projects {
+      id
+      project {
+        id
+        name
+        status
+      }
+      joinedAt
+    }
+  }
+}
+
+# Get paginated users list
+query GetUsers($first: Int, $after: String, $filter: UserFilterInput) {
+  users(first: $first, after: $after, filter: $filter) {
+    edges {
+      node {
+        id
+        email
+        username
+        firstName
+        lastName
+        profileImageUrl
+        emailVerified
+        createdAt
+        lastLogin
+        roles {
+          id
+          name
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+# ============================================
+# PROJECT QUERIES
+# ============================================
+
+# Get single project by ID
+query GetProject($id: UUID!) {
+  project(id: $id) {
+    id
+    name
+    description
+    status
+    value
+    deadline
+    progressPercentage
+    createdBy {
+      id
+      firstName
+      lastName
+      profileImageUrl
+    }
+    completedBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+    completedAt
+    metadata
+    documents {
+      id
+      fileName
+      filePath
+      fileType
+      fileSize
+      rawFileLocation
+      processedFileLocation
+      uploadedBy {
+        id
+        firstName
+        lastName
+      }
+      uploadedAt
+    }
+    members {
+      id
+      user {
+        id
+        firstName
+        lastName
+        email
+        profileImageUrl
+      }
+      addedBy {
+        id
+        firstName
+        lastName
+      }
+      joinedAt
+    }
+    knowledgeBases {
+      id
+      name
+      scope
+      documentCount
+    }
+    artifacts {
+      id
+      name
+      type
+      category
+      status
+      createdAt
+    }
+    workflowExecutions {
+      id
+      status
+      startedAt
+      completedAt
+      lastUpdatedAt
+    }
+  }
+}
+
+# Get paginated projects list
+query GetProjects($first: Int, $after: String, $filter: ProjectFilterInput) {
+  projects(first: $first, after: $after, filter: $filter) {
+    edges {
+      node {
+        id
+        name
+        description
+        status
+        value
+        deadline
+        progressPercentage
+        createdBy {
+          id
+          firstName
+          lastName
+        }
+        createdAt
+        updatedAt
+        members {
+          id
+          user {
+            id
+            firstName
+            lastName
+            profileImageUrl
+          }
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+# Get current user's projects
+query GetMyProjects($first: Int, $after: String) {
+  myProjects(first: $first, after: $after) {
+    edges {
+      node {
+        id
+        name
+        description
+        status
+        value
+        deadline
+        progressPercentage
+        createdAt
+        updatedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+# ============================================
+# KNOWLEDGE BASE QUERIES
+# ============================================
+
+# Get single knowledge base by ID
+query GetKnowledgeBase($id: UUID!) {
+  knowledgeBase(id: $id) {
+    id
+    name
+    description
+    scope
+    project {
+      id
+      name
+    }
+    documentCount
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+    vectorStoreId
+    documents {
+      id
+      fileName
+      filePath
+      fileType
+      fileSize
+      s3Bucket
+      s3Key
+      uploadedBy {
+        id
+        firstName
+        lastName
+      }
+      uploadedAt
+      metadata
+    }
+    permissions {
+      id
+      user {
+        id
+        firstName
+        lastName
+      }
+      role {
+        id
+        name
+      }
+      permissionType
+      grantedAt
+    }
+  }
+}
+
+# Get paginated knowledge bases list
+query GetKnowledgeBases(
+  $first: Int
+  $after: String
+  $filter: KnowledgeBaseFilterInput
+) {
+  knowledgeBases(first: $first, after: $after, filter: $filter) {
+    edges {
+      node {
+        id
+        name
+        description
+        scope
+        project {
+          id
+          name
+        }
+        documentCount
+        createdBy {
+          id
+          firstName
+          lastName
+        }
+        createdAt
+        updatedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+# Get all global knowledge bases
+query GetGlobalKnowledgeBases {
+  globalKnowledgeBases {
+    id
+    name
+    description
+    scope
+    documentCount
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# ============================================
+# ARTIFACT QUERIES
+# ============================================
+
+# Get single artifact by ID
+query GetArtifact($id: UUID!) {
+  artifact(id: $id) {
+    id
+    projectId
+    name
+    type
+    category
+    status
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    approvedBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    approvedAt
+    versions {
+      id
+      versionNumber
+      content
+      location
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+    }
+    latestVersion {
+      id
+      versionNumber
+      content
+      location
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+    }
+  }
+}
+
+# Get all artifacts for a project
+query GetArtifactsByProject($projectId: UUID!) {
+  artifactsByProject(projectId: $projectId) {
+    id
+    name
+    type
+    category
+    status
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    latestVersion {
+      id
+      versionNumber
+      createdAt
+    }
+  }
+}
+
+# Get single artifact version by ID
+query GetArtifactVersion($id: UUID!) {
+  artifactVersion(id: $id) {
+    id
+    artifactId
+    versionNumber
+    content
+    location
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+  }
+}
+
+# ============================================
+# WORKFLOW QUERIES
+# ============================================
+
+# Get single workflow execution by ID
+query GetWorkflowExecution($id: UUID!) {
+  workflowExecution(id: $id) {
+    id
+    projectId
+    status
+    initiatedBy {
+      id
+      firstName
+      lastName
+    }
+    handledBy {
+      id
+      firstName
+      lastName
+    }
+    completedBy {
+      id
+      firstName
+      lastName
+    }
+    startedAt
+    completedAt
+    lastUpdatedAt
+    workflowConfig
+    errorLog
+    errorMessage
+    results
+    agentTasks {
+      id
+      agent
+      status
+      sequenceOrder
+      startedAt
+      completedAt
+      executionTimeSeconds
+    }
+  }
+}
+
+# Get all workflow executions for a project
+query GetWorkflowExecutionsByProject($projectId: UUID!) {
+  workflowExecutionsByProject(projectId: $projectId) {
+    id
+    status
+    initiatedBy {
+      id
+      firstName
+      lastName
+    }
+    startedAt
+    completedAt
+    lastUpdatedAt
+    agentTasks {
+      id
+      agent
+      status
+      sequenceOrder
+    }
+  }
+}
+
+# Get single agent task by ID
+query GetAgentTask($id: UUID!) {
+  agentTask(id: $id) {
+    id
+    workflowExecutionId
+    initiatedBy {
+      id
+      firstName
+      lastName
+    }
+    handledBy {
+      id
+      firstName
+      lastName
+    }
+    completedBy {
+      id
+      firstName
+      lastName
+    }
+    agent
+    status
+    sequenceOrder
+    inputData
+    outputData
+    taskConfig
+    errorLog
+    errorMessage
+    startedAt
+    completedAt
+    executionTimeSeconds
+  }
+}
+
+# ============================================
+# CONFIGURATION QUERIES
+# ============================================
+
+# Get all agent configurations
+query GetAgentConfigurations {
+  agentConfigurations {
+    id
+    agentType
+    modelName
+    temperature
+    maxTokens
+    systemPrompt
+    additionalParameters
+    enabled
+    createdAt
+    updatedAt
+    updatedBy {
+      id
+      firstName
+      lastName
+    }
+  }
+}
+
+# Get single agent configuration by type
+query GetAgentConfiguration($agentType: AgentType!) {
+  agentConfiguration(agentType: $agentType) {
+    id
+    agentType
+    modelName
+    temperature
+    maxTokens
+    systemPrompt
+    additionalParameters
+    enabled
+    createdAt
+    updatedAt
+    updatedBy {
+      id
+      firstName
+      lastName
+    }
+  }
+}
+
+# ============================================
+# INTEGRATION QUERIES
+# ============================================
+
+# Get all integrations
+query GetIntegrations {
+  integrations {
+    id
+    type
+    name
+    configuration
+    enabled
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get single integration by type
+query GetIntegration($type: IntegrationType!) {
+  integration(type: $type) {
+    id
+    type
+    name
+    configuration
+    enabled
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    updatedAt
+    logs {
+      id
+      action
+      status
+      requestData
+      responseData
+      errorMessage
+      createdAt
+    }
+  }
+}
+
+# ============================================
+# NOTIFICATION QUERIES
+# ============================================
+
+# Get user's notifications
+query GetMyNotifications($first: Int, $after: String, $unreadOnly: Boolean) {
+  myNotifications(first: $first, after: $after, unreadOnly: $unreadOnly) {
+    id
+    type
+    title
+    message
+    read
+    metadata
+    createdAt
+    readAt
+  }
+}
+
+# Get unread notification count
+query GetUnreadNotificationCount {
+  unreadNotificationCount
+}
+
+# ============================================
+# STATISTICS QUERIES
+# ============================================
+
+# Get dashboard statistics
+query GetDashboardStats {
+  dashboardStats {
+    id
+    periodStart
+    periodEnd
+    submittedBids
+    wonBids
+    totalValue
+    wonValue
+    successRate
+    activeRfps
+    detailedMetrics
+    calculatedAt
+  }
+}
+
+# Get bid statistics for a period
+query GetBidStatistics($periodStart: DateTime!, $periodEnd: DateTime!) {
+  bidStatistics(periodStart: $periodStart, periodEnd: $periodEnd) {
+    id
+    periodStart
+    periodEnd
+    submittedBids
+    wonBids
+    totalValue
+    wonValue
+    successRate
+    activeRfps
+    detailedMetrics
+    calculatedAt
+  }
+}
+
+# ============================================
+# AUDIT QUERIES
+# ============================================
+
+# Get audit logs
+query GetAuditLogs(
+  $first: Int
+  $after: String
+  $userId: UUID
+  $resourceType: String
+) {
+  auditLogs(
+    first: $first
+    after: $after
+    userId: $userId
+    resourceType: $resourceType
+  ) {
+    id
+    userId
+    action
+    resourceType
+    resourceId
+    previousState
+    newState
+    ipAddress
+    userAgent
+    createdAt
+  }
+}
+
+# ============================================
+# ROLE & PERMISSION QUERIES
+# ============================================
+
+# Get all roles
+query GetRoles {
+  roles {
+    id
+    name
+    description
+    permissions {
+      id
+      resource
+      action
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get single role by ID
+query GetRole($id: UUID!) {
+  role(id: $id) {
+    id
+    name
+    description
+    permissions {
+      id
+      resource
+      action
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get permissions for a role
+query GetPermissions($roleId: UUID!) {
+  permissions(roleId: $roleId) {
+    id
+    roleId
+    resource
+    action
+    createdAt
+  }
+}

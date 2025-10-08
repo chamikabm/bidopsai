@@ -1,0 +1,143 @@
+# ============================================
+# PROJECT SUBSCRIPTIONS
+# ============================================
+
+# Subscribe to project updates
+subscription OnProjectUpdated($projectId: UUID!) {
+  projectUpdated(projectId: $projectId) {
+    id
+    name
+    description
+    status
+    value
+    deadline
+    progressPercentage
+    updatedAt
+    completedAt
+    metadata
+  }
+}
+
+# ============================================
+# WORKFLOW SUBSCRIPTIONS
+# ============================================
+
+# Subscribe to workflow execution updates
+subscription OnWorkflowExecutionUpdated($workflowExecutionId: UUID!) {
+  workflowExecutionUpdated(workflowExecutionId: $workflowExecutionId) {
+    id
+    projectId
+    status
+    handledBy {
+      id
+      firstName
+      lastName
+    }
+    completedBy {
+      id
+      firstName
+      lastName
+    }
+    completedAt
+    lastUpdatedAt
+    errorLog
+    errorMessage
+    results
+  }
+}
+
+# Subscribe to agent task updates
+subscription OnAgentTaskUpdated($workflowExecutionId: UUID!) {
+  agentTaskUpdated(workflowExecutionId: $workflowExecutionId) {
+    id
+    workflowExecutionId
+    agent
+    status
+    sequenceOrder
+    handledBy {
+      id
+      firstName
+      lastName
+    }
+    completedBy {
+      id
+      firstName
+      lastName
+    }
+    outputData
+    errorLog
+    errorMessage
+    startedAt
+    completedAt
+    executionTimeSeconds
+  }
+}
+
+# ============================================
+# NOTIFICATION SUBSCRIPTIONS
+# ============================================
+
+# Subscribe to new notifications for a user
+subscription OnNotificationReceived($userId: UUID!) {
+  notificationReceived(userId: $userId) {
+    id
+    userId
+    type
+    title
+    message
+    read
+    metadata
+    createdAt
+  }
+}
+
+# ============================================
+# ARTIFACT SUBSCRIPTIONS
+# ============================================
+
+# Subscribe to new artifacts created for a project
+subscription OnArtifactCreated($projectId: UUID!) {
+  artifactCreated(projectId: $projectId) {
+    id
+    projectId
+    name
+    type
+    category
+    status
+    createdBy {
+      id
+      firstName
+      lastName
+    }
+    createdAt
+    latestVersion {
+      id
+      versionNumber
+      content
+    }
+  }
+}
+
+# Subscribe to artifact updates
+subscription OnArtifactUpdated($artifactId: UUID!) {
+  artifactUpdated(artifactId: $artifactId) {
+    id
+    name
+    type
+    category
+    status
+    approvedBy {
+      id
+      firstName
+      lastName
+    }
+    approvedAt
+    latestVersion {
+      id
+      versionNumber
+      content
+      location
+      createdAt
+    }
+  }
+}

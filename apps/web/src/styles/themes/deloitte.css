@@ -1,0 +1,107 @@
+/**
+ * Deloitte Brand Theme
+ * 
+ * Official Deloitte brand colors and styling
+ * Maintains brand consistency and corporate identity
+ */
+
+[data-theme='deloitte'] {
+  /* Background Colors */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 13%;
+  
+  /* Card/Surface Colors */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 13%;
+  
+  /* Popover Colors */
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 13%;
+  
+  /* Primary Colors - Deloitte Green */
+  --primary: 142 49% 46%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary Colors - Deloitte Dark Gray */
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Muted Colors */
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  
+  /* Accent Colors - Deloitte Teal */
+  --accent: 174 49% 46%;
+  --accent-foreground: 0 0% 100%;
+  
+  /* Destructive Colors */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  
+  /* Border Colors */
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  
+  /* Ring Colors */
+  --ring: 142 49% 46%;
+  
+  /* Chart Colors - Deloitte Brand Palette */
+  --chart-1: 142 49% 46%; /* Deloitte Green */
+  --chart-2: 174 49% 46%; /* Deloitte Teal */
+  --chart-3: 0 0% 20%; /* Deloitte Dark Gray */
+  --chart-4: 200 18% 46%; /* Deloitte Blue-Gray */
+  --chart-5: 24 100% 50%; /* Deloitte Orange */
+  
+  /* Custom Application Colors */
+  --success: 142 49% 46%;
+  --success-foreground: 0 0% 100%;
+  
+  --warning: 45 100% 51%;
+  --warning-foreground: 0 0% 13%;
+  
+  --info: 200 18% 46%;
+  --info-foreground: 0 0% 100%;
+  
+  /* Sidebar Colors */
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 0 0% 13%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-hover: 0 0% 96%;
+  
+  /* Top Navigation Colors */
+  --nav-background: 0 0% 100%;
+  --nav-foreground: 0 0% 13%;
+  --nav-border: 0 0% 90%;
+  
+  /* AI Assistant Icon Colors */
+  --ai-glow-primary: 142 49% 46%;
+  --ai-glow-secondary: 174 49% 46%;
+  
+  /* Progress Bar Colors */
+  --progress-background: 0 0% 90%;
+  --progress-foreground: 142 49% 46%;
+  
+  /* Badge Colors */
+  --badge-draft: 45 100% 51%;
+  --badge-in-progress: 200 18% 46%;
+  --badge-completed: 142 49% 46%;
+  --badge-failed: 0 84.2% 60.2%;
+  
+  /* Deloitte-specific brand colors */
+  --deloitte-green: 142 49% 46%;
+  --deloitte-teal: 174 49% 46%;
+  --deloitte-dark-gray: 0 0% 20%;
+  --deloitte-light-gray: 0 0% 96%;
+  --deloitte-blue-gray: 200 18% 46%;
+  --deloitte-orange: 24 100% 50%;
+  
+  /* Shadow */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Border Radius */
+  --radius: 0.5rem;
+}
