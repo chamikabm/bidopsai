@@ -81,3 +81,11 @@ export interface AgentConfiguration {
   updatedAt: string;
   updatedBy?: string;
 }
+
+// Workflow step for UI display
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  status: AgentTaskStatus;
+  description: string;
+}

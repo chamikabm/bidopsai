@@ -29,6 +29,7 @@ export interface Project {
   members: ProjectMember[];
   knowledgeBases: string[];
   artifacts: string[];
+  workflowExecutions?: Array<{ id: string }>;
 }
 
 // Project document entity

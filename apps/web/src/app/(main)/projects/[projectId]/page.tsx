@@ -12,20 +12,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useProject } from '@/hooks/queries/useProject';
 import { useWorkflowExecution } from '@/hooks/queries/useWorkflowExecution';
 import { useWorkflowStream } from '@/hooks/streams/useWorkflowStream';
-import { cn } from '@/lib/utils';
 import type { SSEEvent } from '@/types/sse.types';
 import { SSEEventType } from '@/types/sse.types';
 import type { WorkflowStep } from '@/types/workflow.types';
+import { AgentTaskStatus } from '@/types/workflow.types';
 import { formatDate } from '@/utils/date';
 import { AlertCircle, ArrowLeft, Play, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function ProjectDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.projectId as string;
 
   // State for chat messages
@@ -84,7 +83,7 @@ export default function ProjectDetailPage() {
         setIsThinking(false);
         setIsStreaming(false);
         toast.error('Agent task failed', {
-          description: (event.data as any)?.errorMessage || 'An error occurred',
+          description: (event.data as Record<string, unknown>)?.errorMessage as string || 'An error occurred',
         });
         break;
 
@@ -173,51 +172,51 @@ export default function ProjectDetailPage() {
     return [
       {
         id: 'upload',
-        label: 'Upload',
-        status: 'COMPLETED',
-        agent: 'SUPERVISOR',
+        name: 'Upload',
+        status: AgentTaskStatus.COMPLETED,
+        description: 'Files uploaded',
       },
       {
         id: 'parsing',
-        label: 'Parsing',
-        status: agentTasks.find((t) => t.agent === 'PARSER')?.status || 'OPEN',
-        agent: 'PARSER',
+        name: 'Parsing',
+        status: agentTasks.find((t) => t.agent === 'PARSER')?.status || AgentTaskStatus.OPEN,
+        description: 'Extract content',
       },
       {
         id: 'analysis',
-        label: 'Analysis',
-        status: agentTasks.find((t) => t.agent === 'ANALYSIS')?.status || 'OPEN',
-        agent: 'ANALYSIS',
+        name: 'Analysis',
+        status: agentTasks.find((t) => t.agent === 'ANALYSIS')?.status || AgentTaskStatus.OPEN,
+        description: 'Analyze requirements',
       },
       {
         id: 'content',
-        label: 'Content',
-        status: agentTasks.find((t) => t.agent === 'CONTENT')?.status || 'OPEN',
-        agent: 'CONTENT',
+        name: 'Content',
+        status: agentTasks.find((t) => t.agent === 'CONTENT')?.status || AgentTaskStatus.OPEN,
+        description: 'Generate artifacts',
       },
       {
         id: 'compliance',
-        label: 'Compliance',
-        status: agentTasks.find((t) => t.agent === 'COMPLIANCE')?.status || 'OPEN',
-        agent: 'COMPLIANCE',
+        name: 'Compliance',
+        status: agentTasks.find((t) => t.agent === 'COMPLIANCE')?.status || AgentTaskStatus.OPEN,
+        description: 'Verify compliance',
       },
       {
         id: 'qa',
-        label: 'QA',
-        status: agentTasks.find((t) => t.agent === 'QA')?.status || 'OPEN',
-        agent: 'QA',
+        name: 'QA',
+        status: agentTasks.find((t) => t.agent === 'QA')?.status || AgentTaskStatus.OPEN,
+        description: 'Quality review',
       },
       {
         id: 'comms',
-        label: 'Comms',
-        status: agentTasks.find((t) => t.agent === 'COMMS')?.status || 'OPEN',
-        agent: 'COMMS',
+        name: 'Comms',
+        status: agentTasks.find((t) => t.agent === 'COMMS')?.status || AgentTaskStatus.OPEN,
+        description: 'Send notifications',
       },
       {
         id: 'bidding',
-        label: 'Bidding',
-        status: agentTasks.find((t) => t.agent === 'SUBMISSION')?.status || 'OPEN',
-        agent: 'SUBMISSION',
+        name: 'Bidding',
+        status: agentTasks.find((t) => t.agent === 'SUBMISSION')?.status || AgentTaskStatus.OPEN,
+        description: 'Submit proposal',
       },
     ];
   }, [workflowExecution]);
@@ -394,12 +393,12 @@ function formatSSEEventAsMessage(event: SSEEvent): ChatMessageProps | null {
   let content = '';
   switch (event.type) {
     case SSEEventType.ANALYSIS_COMPLETED:
-      content = (event.data as any)?.analysisMarkdown || 'Analysis completed';
+      content = (event.data as Record<string, unknown>)?.analysisMarkdown as string || 'Analysis completed';
       break;
     case SSEEventType.AWAITING_FEEDBACK:
     case SSEEventType.AWAITING_REVIEW:
     case SSEEventType.REVIEW_PROMPT:
-      content = (event.data as any)?.message || 'Awaiting your input';
+      content = (event.data as Record<string, unknown>)?.message as string || 'Awaiting your input';
       break;
     default:
       content = JSON.stringify(event.data, null, 2);

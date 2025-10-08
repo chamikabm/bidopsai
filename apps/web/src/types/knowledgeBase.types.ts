@@ -1,25 +1,34 @@
-// Knowledge base scope enum
+/**
+ * Knowledge Base Types
+ * 
+ * Type definitions for knowledge bases, which can be either global (shared across projects)
+ * or local (specific to a single project).
+ */
+
 export enum KnowledgeBaseScope {
-  GLOBAL = "GLOBAL",
-  LOCAL = "LOCAL",
+  GLOBAL = 'GLOBAL',
+  LOCAL = 'LOCAL',
 }
 
-// Knowledge base entity
 export interface KnowledgeBase {
   id: string;
   name: string;
   description?: string;
   scope: KnowledgeBaseScope;
   projectId?: string;
+  projectName?: string;
   documentCount: number;
-  createdBy: string;
+  createdBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
   createdAt: string;
   updatedAt: string;
   vectorStoreId?: string;
-  documents: KnowledgeBaseDocument[];
+  documents?: KnowledgeBaseDocument[];
 }
 
-// Knowledge base document entity
 export interface KnowledgeBaseDocument {
   id: string;
   knowledgeBaseId: string;
@@ -29,23 +38,16 @@ export interface KnowledgeBaseDocument {
   fileSize: number;
   s3Bucket: string;
   s3Key: string;
-  uploadedBy: string;
+  uploadedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
   uploadedAt: string;
   metadata?: Record<string, unknown>;
   vectorIds?: string;
 }
 
-// Knowledge base permission entity
-export interface KnowledgeBasePermission {
-  id: string;
-  knowledgeBaseId: string;
-  userId?: string;
-  roleId?: string;
-  permissionType: string;
-  grantedAt: string;
-}
-
-// Create knowledge base input
 export interface CreateKnowledgeBaseInput {
   name: string;
   description?: string;
@@ -53,7 +55,11 @@ export interface CreateKnowledgeBaseInput {
   projectId?: string;
 }
 
-// Upload document input
+export interface UpdateKnowledgeBaseInput {
+  name?: string;
+  description?: string;
+}
+
 export interface UploadKnowledgeBaseDocumentInput {
   knowledgeBaseId: string;
   fileName: string;

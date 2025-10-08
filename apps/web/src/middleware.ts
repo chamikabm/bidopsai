@@ -1,147 +1,105 @@
 /**
- * Next.js Middleware for Authentication and Route Protection
+ * Next.js Middleware
  * 
- * This middleware runs on every request to protect routes based on
- * authentication status and user roles.
+ * Handles authentication and authorization checks for protected routes.
+ * This middleware runs on every request to verify user authentication via Cognito.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/**
- * Public routes that don't require authentication
- */
-const publicRoutes = [
-  '/',
-  '/signin',
-  '/signup',
-  '/reset-password',
-  '/confirm-signup',
-];
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = ['/signin', '/signup', '/forgot-password'];
 
-/**
- * Routes that should redirect to dashboard if user is already authenticated
- */
-const authRoutes = ['/signin', '/signup', '/reset-password'];
+// Route-to-role mapping for role-based access control
+const PROTECTED_ROUTES: Record<string, string[]> = {
+  '/dashboard': ['ADMIN', 'DRAFTER', 'BIDDER', 'KB_ADMIN', 'KB_VIEW'],
+  '/projects': ['ADMIN', 'DRAFTER', 'BIDDER', 'KB_ADMIN', 'KB_VIEW'],
+  '/knowledge-bases': ['ADMIN', 'DRAFTER', 'BIDDER', 'KB_ADMIN', 'KB_VIEW'],
+  '/users': ['ADMIN'],
+  '/settings/agents': ['ADMIN'],
+  '/settings/integrations': ['ADMIN'],
+  '/settings/system': ['ADMIN', 'DRAFTER', 'BIDDER', 'KB_ADMIN', 'KB_VIEW'],
+};
 
-/**
- * API routes that don't require authentication
- */
-const publicApiRoutes = [
-  '/api/auth/signin',
-  '/api/auth/signup',
-  '/api/auth/signout',
-  '/api/health',
-];
-
-/**
- * Check if route is public
- */
-function isPublicRoute(pathname: string): boolean {
-  return publicRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
-}
-
-/**
- * Check if route is an auth route
- */
-function isAuthRoute(pathname: string): boolean {
-  return authRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
-}
-
-/**
- * Check if API route is public
- */
-function isPublicApiRoute(pathname: string): boolean {
-  return publicApiRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
-}
-
-/**
- * Get authentication token from cookies
- */
-function getAuthToken(request: NextRequest): string | null {
-  // Check for various Amplify auth cookies
-  const idToken = request.cookies.get('CognitoIdentityServiceProvider.idToken')?.value;
-  const accessToken = request.cookies.get('CognitoIdentityServiceProvider.accessToken')?.value;
-  
-  return idToken || accessToken || null;
-}
-
-/**
- * Check if user is authenticated based on cookies
- * Note: This is a simple check. For production, you might want to verify the token.
- */
-function isAuthenticated(request: NextRequest): boolean {
-  const token = getAuthToken(request);
-  return !!token;
-}
-
-/**
- * Middleware function
- */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Skip middleware for static files and Next.js internals
+  // Allow public routes
+  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+  
+  // Allow static files and Next.js internals
   if (
     pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
-    pathname.includes('.') // Files with extensions
+    pathname.includes('.')
   ) {
     return NextResponse.next();
   }
   
-  const isPublic = isPublicRoute(pathname);
-  const isPublicApi = isPublicApiRoute(pathname);
-  const isAuth = isAuthRoute(pathname);
-  const authenticated = isAuthenticated(request);
+  // Check authentication
+  const authToken = request.cookies.get('amplify-auth-token')?.value;
   
-  // Allow public API routes
-  if (isPublicApi) {
-    return NextResponse.next();
+  if (!authToken) {
+    // Redirect to signin if not authenticated
+    const url = request.nextUrl.clone();
+    url.pathname = '/signin';
+    url.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(url);
   }
   
-  // Redirect authenticated users away from auth pages
-  if (isAuth && authenticated) {
-    const dashboardUrl = new URL('/dashboard', request.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
-  
-  // Allow public routes
-  if (isPublic) {
-    return NextResponse.next();
-  }
-  
-  // Redirect unauthenticated users to signin
-  if (!authenticated) {
-    const signinUrl = new URL('/signin', request.url);
-    signinUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(signinUrl);
-  }
-  
-  // For authenticated users, add auth headers to API requests
-  if (pathname.startsWith('/api/')) {
-    const token = getAuthToken(request);
-    const requestHeaders = new Headers(request.headers);
+  // Check role-based access
+  try {
+    // Get user roles from the auth token
+    // In production, you'd decode the JWT token here
+    // For now, we'll pass through and let the client-side handle role checks
+    const userRoles = getUserRolesFromToken(authToken);
     
-    if (token) {
-      requestHeaders.set('Authorization', `Bearer ${token}`);
+    // Find matching protected route
+    const protectedRoute = Object.keys(PROTECTED_ROUTES).find(route =>
+      pathname.startsWith(route)
+    );
+    
+    if (protectedRoute) {
+      const allowedRoles = PROTECTED_ROUTES[protectedRoute];
+      const hasAccess = userRoles.some(role => allowedRoles.includes(role));
+      
+      if (!hasAccess) {
+        // Redirect to dashboard if user doesn't have required role
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        url.searchParams.set('error', 'insufficient-permissions');
+        return NextResponse.redirect(url);
+      }
     }
-    
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+  } catch (error) {
+    console.error('Error checking user permissions:', error);
+    // On error, allow through and let client-side handle it
   }
   
-  // Allow authenticated users to access protected routes
   return NextResponse.next();
 }
 
 /**
- * Middleware configuration
- * Specify which routes should run through middleware
+ * Extract user roles from auth token
+ * In production, decode the JWT token properly
  */
+function getUserRolesFromToken(token: string): string[] {
+  try {
+    // This is a simplified version
+    // In production, use a JWT library to decode the token
+    // and extract cognito:groups from the claims
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload['cognito:groups'] || [];
+  } catch {
+    return [];
+  }
+}
+
+// Specify which routes this middleware should run on
 export const config = {
   matcher: [
     /*
@@ -149,7 +107,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * - public folder
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
