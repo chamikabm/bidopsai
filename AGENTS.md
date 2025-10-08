@@ -1,5 +1,11 @@
 # Agent Development Guide
 
+## Constitution
+**CRITICAL**: Follow the project constitution at `.specify/memory/constitution.md` (v1.0.0)
+- 8 core principles govern ALL development (TDD, Server Components, Type Safety, etc.)
+- Quality gates define acceptance criteria for all PRs
+- Non-negotiable: Test-Driven Development (tests before code)
+
 ## Project Rules
 **IMPORTANT**: Always consult `.kiro/steering/` for detailed standards:
 - `fe-standards.md` - Frontend code standards (React, Next.js, TypeScript)
