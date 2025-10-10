@@ -26,16 +26,19 @@ export function TopNavigation({
 }: TopNavigationProps) {
   return (
     <header
-      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}
+      className={`sticky top-0 z-50 w-full border-b border-border bg-card ${className}`}
     >
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* Left: Mobile menu */}
-        <div className="flex items-center gap-2">
+      <div className="flex h-16 items-center justify-between px-4">
+        {/* Left: Mobile menu (only visible on mobile) */}
+        <div className="md:hidden">
           <MobileSidebar />
         </div>
+        
+        {/* Spacer for desktop */}
+        <div className="hidden md:block flex-1" />
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           <AIAssistantIcon onClick={onAIAssistantClick} />
           <NotificationsIcon
             unreadCount={unreadNotifications}

@@ -37,7 +37,7 @@ export function LanguageSelector({ className = '' }: LanguageSelectorProps) {
         <Button
           variant="ghost"
           size="icon"
-          className={className}
+          className={`text-foreground ${className}`}
           aria-label="Select language"
         >
           <Globe className="h-5 w-5" />

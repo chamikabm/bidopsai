@@ -32,7 +32,7 @@ export function AIAssistantIcon({ onClick, className = '' }: AIAssistantIconProp
       variant="ghost"
       size="icon"
       onClick={onClick}
-      className={`relative ${className}`}
+      className={`relative text-foreground ${className}`}
       aria-label="AI Assistant"
     >
       <div className={`absolute inset-0 rounded-md ${glowColorClass} opacity-30`} />

@@ -26,7 +26,7 @@ export function NotificationsIcon({
       variant="ghost"
       size="icon"
       onClick={onClick}
-      className={`relative ${className}`}
+      className={`relative text-foreground ${className}`}
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
     >
       <Bell className="h-5 w-5" />
