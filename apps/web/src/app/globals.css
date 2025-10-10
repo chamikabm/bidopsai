@@ -73,6 +73,7 @@
 }
 
 @import '../styles/editor.css';
+@import '../styles/animations.css';
 
 @keyframes accordion-down {
   from { height: 0; }
