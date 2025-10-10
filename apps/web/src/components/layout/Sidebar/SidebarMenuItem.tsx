@@ -37,7 +37,7 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start gap-2 text-foreground',
+            'w-full justify-start gap-2 text-foreground rounded-md',
             (isSubItemActive || isOpen) && 'bg-accent text-accent-foreground'
           )}
           onClick={() => setIsOpen(!isOpen)}
@@ -56,16 +56,16 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
         </Button>
         
         {!collapsed && isOpen && (
-          <div className="ml-6 space-y-1 border-l pl-4">
+          <div className="ml-6 space-y-1 border-l border-border pl-4 py-1">
             {item.items?.map((subItem) => {
               const isSubActive = pathname === subItem.href;
               return (
-                <Link key={subItem.id} href={subItem.href || '#'}>
+                <Link key={subItem.id} href={subItem.href || '#'} className="block mb-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      'w-full justify-start text-muted-foreground',
+                      'w-full justify-start text-muted-foreground rounded-md h-8',
                       isSubActive && 'bg-accent text-accent-foreground font-medium'
                     )}
                   >
@@ -87,11 +87,11 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
 
   // Single menu item without sub-items
   return (
-    <Link href={item.href || '#'}>
+    <Link href={item.href || '#'} className="block mb-1">
       <Button
         variant="ghost"
         className={cn(
-          'w-full justify-start gap-2 text-foreground',
+          'w-full justify-start gap-2 text-foreground rounded-md',
           isActive && 'bg-accent text-accent-foreground font-medium'
         )}
       >
