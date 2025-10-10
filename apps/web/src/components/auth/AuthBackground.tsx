@@ -3,6 +3,7 @@
  *
  * Provides a full-screen futuristic animated background for auth pages
  * with CSS-based animations for optimal performance.
+ * Inspired by: Bloomberg Terminal + Vercel + Cyberpunk aesthetics
  */
 
 'use client';
@@ -10,9 +11,7 @@
 import { useMemo } from 'react';
 
 // Generate stable particle configurations
-function generateParticles(count: number) {
-  // Use a simple seeded random for consistent SSR/CSR
-  const seed = 12345;
+function generateParticles(count: number, seed: number) {
   let random = seed;
   
   const seededRandom = () => {
@@ -22,36 +21,102 @@ function generateParticles(count: number) {
   
   return Array.from({ length: count }, (_, i) => ({
     id: i,
-    width: seededRandom() * 4 + 2,
-    height: seededRandom() * 4 + 2,
+    width: seededRandom() * 4 + 3,
+    height: seededRandom() * 4 + 3,
     left: seededRandom() * 100,
     top: seededRandom() * 100,
     delay: seededRandom() * 5,
-    duration: seededRandom() * 10 + 10,
+    duration: seededRandom() * 15 + 15,
+    opacity: seededRandom() * 0.5 + 0.5, // Much more visible: 0.5-1.0
   }));
 }
 
 export function AuthBackground() {
-  const particles = useMemo(() => generateParticles(20), []);
+  const particles = useMemo(() => generateParticles(80, 12345), []);
+  const largeOrbs = useMemo(() => generateParticles(15, 54321), []);
   
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 animate-gradient" />
+    <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950">
+      {/* Animated gradient background - MORE VIBRANT */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-slate-950 to-purple-900/20" />
       
-      {/* Floating particles */}
+      {/* Small particles - MUCH BRIGHTER AND BIGGER */}
       <div className="absolute inset-0">
         {particles.map((particle) => (
           <div
             key={particle.id}
-            className="absolute rounded-full bg-primary/20 animate-float"
+            className="absolute rounded-full bg-blue-400"
             style={{
               width: `${particle.width}px`,
               height: `${particle.height}px`,
               left: `${particle.left}%`,
               top: `${particle.top}%`,
+              opacity: particle.opacity,
+              animation: `float ${particle.duration}s ease-in-out infinite`,
               animationDelay: `${particle.delay}s`,
-              animationDuration: `${particle.duration}s`,
+              boxShadow: `0 0 ${particle.width * 6}px rgba(59, 130, 246, 0.8), 0 0 ${particle.width * 12}px rgba(59, 130, 246, 0.4)`,
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Larger glowing orbs - MORE PROMINENT */}
+      <div className="absolute inset-0">
+        {largeOrbs.map((orb) => (
+          <div
+            key={`orb-${orb.id}`}
+            className="absolute rounded-full blur-3xl"
+            style={{
+              width: `${orb.width * 60}px`,
+              height: `${orb.height * 60}px`,
+              left: `${orb.left}%`,
+              top: `${orb.top}%`,
+              background: `radial-gradient(circle, rgba(59, 130, 246, ${orb.opacity * 0.6}) 0%, transparent 70%)`,
+              animation: `breath ${orb.duration * 1.5}s ease-in-out infinite`,
+              animationDelay: `${orb.delay}s`,
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Scanlines effect - MORE VISIBLE */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(59, 130, 246, 0.1) 2px, rgba(59, 130, 246, 0.1) 4px)',
+        }}
+      />
+      
+      {/* Center spotlight - BRIGHTER */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.25)_0%,transparent_50%)]" />
+      
+      {/* Animated data streams - MUCH MORE VISIBLE */}
+      <div className="absolute inset-0 overflow-hidden opacity-60">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={`stream-${i}`}
+            className="absolute h-full w-[2px]"
+            style={{
+              left: `${(i + 1) * 11}%`,
+              background: 'linear-gradient(to bottom, transparent 0%, rgba(59, 130, 246, 0.8) 30%, rgba(59, 130, 246, 0.8) 70%, transparent 100%)',
+              animation: `float ${18 + i * 2}s linear infinite`,
+              animationDelay: `${i * -2}s`,
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Additional horizontal data streams for more dynamic feel */}
+      <div className="absolute inset-0 overflow-hidden opacity-30">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={`h-stream-${i}`}
+            className="absolute w-full h-[1px]"
+            style={{
+              top: `${(i + 1) * 18}%`,
+              background: 'linear-gradient(to right, transparent 0%, rgba(59, 130, 246, 0.6) 30%, rgba(59, 130, 246, 0.6) 70%, transparent 100%)',
+              animation: `float ${25 + i * 3}s linear infinite`,
+              animationDelay: `${i * -3}s`,
             }}
           />
         ))}
