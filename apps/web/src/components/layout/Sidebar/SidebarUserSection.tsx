@@ -48,7 +48,7 @@ export function SidebarUserSection({ collapsed = false }: SidebarUserSectionProp
           <Button variant="ghost" size="icon" className="h-10 w-10">
             <Avatar className="h-8 w-8">
               <AvatarImage src={undefined} alt={userName} />
-              <AvatarFallback>{userInitials}</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -70,19 +70,19 @@ export function SidebarUserSection({ collapsed = false }: SidebarUserSectionProp
   }
   
   return (
-    <div className="border-t pt-4">
+    <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 px-2"
+            className="w-full justify-start gap-3 px-2 text-foreground"
           >
             <Avatar className="h-8 w-8">
               <AvatarImage src={undefined} alt={userName} />
-              <AvatarFallback>{userInitials}</AvatarFallback>
+              <AvatarFallback className="bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start text-left">
-              <span className="text-sm font-medium">{userName}</span>
+              <span className="text-sm font-medium text-foreground">{userName}</span>
               <span className="text-xs text-muted-foreground">{userRole}</span>
             </div>
           </Button>

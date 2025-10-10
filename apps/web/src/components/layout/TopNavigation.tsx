@@ -1,12 +1,11 @@
 /**
  * Top Navigation Component
  *
- * Main navigation bar with logo, AI assistant, notifications, and language selector
+ * Main navigation bar with AI assistant, notifications, and language selector
  */
 
 'use client';
 
-import { Logo } from './Logo';
 import { AIAssistantIcon } from './AIAssistantIcon';
 import { NotificationsIcon } from './NotificationsIcon';
 import { LanguageSelector } from './LanguageSelector';
@@ -30,10 +29,9 @@ export function TopNavigation({
       className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}
     >
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* Left: Mobile menu + Logo */}
+        {/* Left: Mobile menu */}
         <div className="flex items-center gap-2">
           <MobileSidebar />
-          <Logo />
         </div>
 
         {/* Right: Actions */}

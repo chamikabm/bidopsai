@@ -37,8 +37,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start gap-2',
-            (isSubItemActive || isOpen) && 'bg-accent'
+            'w-full justify-start gap-2 text-foreground',
+            (isSubItemActive || isOpen) && 'bg-accent text-accent-foreground'
           )}
           onClick={() => setIsOpen(!isOpen)}
         >
@@ -65,8 +65,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      'w-full justify-start',
-                      isSubActive && 'bg-accent font-medium'
+                      'w-full justify-start text-muted-foreground',
+                      isSubActive && 'bg-accent text-accent-foreground font-medium'
                     )}
                   >
                     {subItem.label}
@@ -91,8 +91,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
       <Button
         variant="ghost"
         className={cn(
-          'w-full justify-start gap-2',
-          isActive && 'bg-accent font-medium'
+          'w-full justify-start gap-2 text-foreground',
+          isActive && 'bg-accent text-accent-foreground font-medium'
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}

@@ -1,6 +1,6 @@
 /**
  * Sidebar Component
- * 
+ *
  * Left sidebar with collapsible menu and user section
  */
 
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Logo } from '../Logo';
 import { SidebarMenu } from './SidebarMenu';
 import { SidebarUserSection } from './SidebarUserSection';
 import { MAIN_MENU_ITEMS, SETTINGS_MENU_ITEMS } from '@/config/menu.config';
@@ -26,16 +27,27 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'relative flex flex-col border-r bg-background transition-all duration-300',
+        'relative flex flex-col border-r bg-card transition-all duration-300',
         collapsed ? 'w-16' : 'w-64',
         className
       )}
     >
+      {/* Logo section */}
+      <div className="flex h-16 items-center justify-center border-b px-3">
+        {collapsed ? (
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">BO</span>
+          </div>
+        ) : (
+          <Logo />
+        )}
+      </div>
+
       {/* Toggle button */}
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -right-3 top-7 z-50 h-6 w-6 rounded-full border bg-background shadow-md"
+        className="absolute -right-3 top-7 z-50 h-6 w-6 rounded-full border bg-card shadow-md"
         onClick={() => setCollapsed(!collapsed)}
       >
         {collapsed ? (
@@ -59,8 +71,11 @@ export function Sidebar({ className }: SidebarProps) {
       </ScrollArea>
 
       {/* User section */}
-      <div className="border-t p-3">
-        <SidebarUserSection collapsed={collapsed} />
+      <div>
+        <Separator />
+        <div className="p-3">
+          <SidebarUserSection collapsed={collapsed} />
+        </div>
       </div>
     </aside>
   );
