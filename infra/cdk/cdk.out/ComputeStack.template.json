@@ -1,0 +1,117 @@
+{
+ "Resources": {
+  "EcsCluster97242B84": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "hackathon-cluster"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComputeStack/EcsCluster/Resource"
+   }
+  },
+  "TaskDefinitionTaskRoleFD40A61D": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComputeStack/TaskDefinition/TaskRole/Resource"
+   }
+  },
+  "TaskDefinitionB36D86D9": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Cpu": 128,
+      "Essential": true,
+      "Image": "nginx:latest",
+      "Memory": 256,
+      "Name": "AppContainer"
+     }
+    ],
+    "Cpu": "256",
+    "Family": "ComputeStackTaskDefinition62C0F331",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "TaskDefinitionTaskRoleFD40A61D",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComputeStack/TaskDefinition/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/13LQQrCMBAF0LN0n462BS9QcatU9zLGqY5tk5JMEAm5u7Yqgqv/eTO/hKJcwTLDu8/1uct7PkHcC+pOvegYSXuIdR+8kFN1a751g+6CQgf03ZpaNixszfTwL9YIsiH3s6QYB4iN7WkaTJmSasjb4PRM2yBjkPn40aR2D7las6igqKDKbp45d8EIDwTNO59cPMgGywAAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "ComputeStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "EcsClusterName": {
+   "Description": "ECS cluster name",
+   "Value": {
+    "Ref": "EcsCluster97242B84"
+   },
+   "Export": {
+    "Name": "EcsClusterName"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

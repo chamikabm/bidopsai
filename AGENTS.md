@@ -1,40 +1,33 @@
-# Agent Development Guide
+# Agent Development Guidelines
 
-## Constitution
-**CRITICAL**: Follow the project constitution at `.specify/memory/constitution.md` (v1.0.0)
-- 8 core principles govern ALL development (TDD, Server Components, Type Safety, etc.)
-- Quality gates define acceptance criteria for all PRs
-- Non-negotiable: Test-Driven Development (tests before code)
+## Project Context
+Infrastructure-as-Code for AWS Hackathon AgentCore using AWS CDK (Python). Architecture in `docs/arch.mermaid`, ER diagrams in `docs/er.mermaid`. Constitution in `.specify/memory/constitution.md` defines AWS Well-Architected Framework compliance requirements. **Development platform: macOS**.
 
-## Project Rules
-**IMPORTANT**: Always consult `.kiro/steering/` for detailed standards:
-- `fe-standards.md` - Frontend code standards (React, Next.js, TypeScript)
-- `fe-testing-standards.md` - TDD workflow and testing requirements
-- `gql-api-standards.md` - GraphQL API standards
-- `agent-core-standards.md` - Agent development standards
-- Other domain-specific rules in `.kiro/steering/`
+## Build/Test/Lint Commands
+- **Test all**: `PYTHONPATH=. pytest` (from repo root)
+- **Single test**: `PYTHONPATH=. pytest tests/unit/test_vpc_construct.py::test_vpc_construct`
+- **Contract tests**: `PYTHONPATH=. pytest tests/contract/` (validates CloudFormation outputs)
+- **CDK synth**: `cd cdk && cdk synth` (validates CloudFormation templates)
+- **CDK synth single stack**: `cd cdk && cdk synth hackathon-agentcore-stack`
+- **Format**: `cd cdk && black .` (88 char line length)
+- **Lint**: `cd cdk && pylint cdk/` (docstrings disabled, see pyproject.toml)
 
-## Commands (from apps/web/)
-- **Build**: `npm run build` (Next.js with turbopack)
-- **Lint**: `npm run lint`
-- **Test**: `npm run test` (Vitest watch mode)
-- **Test Single**: `npm run test -- path/to/file.test.tsx`
-- **Test Coverage**: `npm run test:coverage`
-- **E2E Tests**: `npm run test:e2e` (Playwright)
-- **Dev**: `npm run dev` (Next.js dev server with turbopack)
+## Code Style (Python 3.11+, AWS CDK v2)
+- **Imports**: Group stdlib → third-party → aws_cdk → constructs → local (alphabetical within groups). Use `from aws_cdk import (..., aws_x as x)` style.
+- **Types**: Type hints required on all functions/methods (e.g., `def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None`)
+- **Naming**: `snake_case` (functions/vars), `PascalCase` (classes), `UPPER_SNAKE` (constants)
+- **Formatting**: Black (88 chars), no manual docstrings (pylint disabled C0114/C0115/C0116)
+- **Error Handling**: Use AWS CDK exceptions, no bare try/except, always validate stack dependencies
+- **Security**: NEVER hardcode secrets—use Secrets Manager/SSM. All S3 buckets KMS-encrypted, VPC endpoints for AWS services.
+- **Architecture**: Multi-AZ (2 AZs min), VPC 10.0.0.0/16, 4 subnet tiers (Public/24, PrivateApp/24, PrivateAgent/24, PrivateData/24)
 
-## Code Standards
-- **NO COMMENTS**: Never add code comments unless explicitly requested
-- **TDD Required**: Write tests BEFORE implementation (Red → Green → Refactor)
-- **TypeScript**: Strict mode enabled; use discriminated unions, branded types; no `any`
-- **Imports**: Use `@/` alias for src imports (e.g., `import { cn } from '@/lib/utils'`)
-- **Components**: Function components only; Server Components by default, `'use client'` when needed
-- **State**: TanStack Query for server state, Zustand for client state
-- **Forms**: React Hook Form + Zod validation
-- **Styling**: Tailwind CSS with `cn()` utility for conditional classes
-- **Error Handling**: Use Error Boundaries for components, try/catch for async
-- **Naming**: PascalCase for components, camelCase for functions/variables, UPPER_CASE for constants
+## AWS Services
+- **AWS Bedrock AgentCore**: Deploy containerized AI agents via `aws_cdk.aws_bedrockagentcore.CfnRuntime` (L1 construct). Requires ECR container URI, IAM execution role with `bedrock-agentcore.amazonaws.com` trust policy. Supports VPC mode (PrivateAgent subnets) or PUBLIC mode. Runtime status must reach ACTIVE before invocation.
 
-## Formatting
-- Semi: true, Single quotes, 2 spaces, 80 char width (Prettier + Tailwind plugin)
-- ESLint: No unused vars (prefix `_` to ignore), no console (except warn/error), prefer const
+## .specify Workflow
+- Feature branches: `00X-feature-name` (3-digit prefix). Check prerequisites: `.specify/scripts/bash/check-prerequisites.sh --json`
+- Slash commands: `/constitution`, `/spec`, `/plan`, `/tasks`, `/implement`, `/analyze`, `/clarify`
+
+## Constitution Compliance (NON-NEGOTIABLE)
+- All code MUST pass AWS Well-Architected Framework checks (6 pillars: Operational Excellence, Security, Reliability, Performance, Cost, Sustainability)
+- Tagging: All resources tagged with Project/Environment/Owner/CostCenter. Encryption at rest/transit (TLS 1.2+). Multi-AZ failover tested.

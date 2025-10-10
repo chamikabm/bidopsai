@@ -1,0 +1,139 @@
+{
+ "Resources": {
+  "AppLogGroup7D8CD952": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/hackathon/app",
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MonitoringStack/AppLogGroup/Resource"
+   }
+  },
+  "AlbLogGroup7AA1B949": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/hackathon/alb",
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MonitoringStack/AlbLogGroup/Resource"
+   }
+  },
+  "AlbHealthyHostsAlarm09A05A28": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmDescription": "ALB has unhealthy targets",
+    "AlarmName": "ALB Healthy Hosts",
+    "ComparisonOperator": "LessThanThreshold",
+    "Dimensions": [
+     {
+      "Name": "LoadBalancer",
+      "Value": "hackathon-alb"
+     },
+     {
+      "Name": "TargetGroup",
+      "Value": "hackathon-targets"
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "HealthyHostCount",
+    "Namespace": "AWS/ApplicationELB",
+    "Period": 300,
+    "Statistic": "Average",
+    "Threshold": 1
+   },
+   "Metadata": {
+    "aws:cdk:path": "MonitoringStack/AlbHealthyHostsAlarm/Resource"
+   }
+  },
+  "CloudTrailA62D711D": {
+   "Type": "AWS::CloudTrail::Trail",
+   "Properties": {
+    "EnableLogFileValidation": true,
+    "EventSelectors": [],
+    "IncludeGlobalServiceEvents": true,
+    "IsLogging": true,
+    "IsMultiRegionTrail": true,
+    "IsOrganizationTrail": false,
+    "S3BucketName": {
+     "Fn::ImportValue": "StorageStack:ExportsOutputRefLogsBucket9C4D88434A6140BD"
+    },
+    "TrailName": "hackathon-trail"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MonitoringStack/CloudTrail/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zXJsQ6CMBSF4WdhL1ehibtxcDGRoLuppUKl9JL2NsQ0fXct6nS+nL+Gqt7BthCLL2U3lkbfIV5IyJF9rls02HuIJ+yPDsPMDg/7d2LSYOgWQXKAuDfCTTmv+DVyQhuI1zy5rUgp8xxoDpTVKo/BSZVY86IB7YZDxYEXT6916YIlPSlov/sG8ifoE64AAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "MonitoringStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "AppLogGroupName": {
+   "Description": "Application log group name",
+   "Value": {
+    "Ref": "AppLogGroup7D8CD952"
+   },
+   "Export": {
+    "Name": "AppLogGroupName"
+   }
+  },
+  "CloudTrailArn": {
+   "Description": "CloudTrail ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "CloudTrailA62D711D",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "CloudTrailArn"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

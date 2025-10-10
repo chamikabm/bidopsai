@@ -1,0 +1,446 @@
+{
+ "Resources": {
+  "RdsSecretB2B964C3": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "/@\"",
+     "GenerateStringKey": "password",
+     "SecretStringTemplate": "{\"username\": \"postgres\"}"
+    },
+    "Name": "hackathon/rds/credentials"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsSecret/Resource"
+   }
+  },
+  "RdsSecretAttachmentDFF91DCD": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "RdsSecretB2B964C3"
+    },
+    "TargetId": {
+     "Ref": "RdsCluster0F718D69"
+    },
+    "TargetType": "AWS::RDS::DBCluster"
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsSecret/Attachment/Resource"
+   }
+  },
+  "RdsClusterSubnetsC1949EB4": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnets for RdsCluster database",
+    "SubnetIds": [
+     {
+      "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet1Subnet588C411B3A8F06AF"
+     },
+     {
+      "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet2SubnetE20E2EF38A6298BE"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/Subnets/Default"
+   }
+  },
+  "RdsClusterSecurityGroup7E54DD55": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "RDS security group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/SecurityGroup/Resource"
+   }
+  },
+  "RdsClusterSecurityGroupfromDatabaseStackRdsClusterSecurityGroup813A93F1IndirectPortF19B3DA9": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow connections to the database Cluster from the Proxy",
+    "FromPort": {
+     "Fn::GetAtt": [
+      "RdsCluster0F718D69",
+      "Endpoint.Port"
+     ]
+    },
+    "GroupId": {
+     "Fn::GetAtt": [
+      "RdsClusterSecurityGroup7E54DD55",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "RdsClusterSecurityGroup7E54DD55",
+      "GroupId"
+     ]
+    },
+    "ToPort": {
+     "Fn::GetAtt": [
+      "RdsCluster0F718D69",
+      "Endpoint.Port"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/SecurityGroup/from DatabaseStackRdsClusterSecurityGroup813A93F1:{IndirectPort}"
+   }
+  },
+  "RdsCluster0F718D69": {
+   "Type": "AWS::RDS::DBCluster",
+   "Properties": {
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBClusterParameterGroupName": "default.aurora-postgresql15",
+    "DBSubnetGroupName": {
+     "Ref": "RdsClusterSubnetsC1949EB4"
+    },
+    "DatabaseName": "hackathon",
+    "Engine": "aurora-postgresql",
+    "EngineVersion": "15.4",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "RdsSecretB2B964C3"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "username",
+    "Port": 5432,
+    "ServerlessV2ScalingConfiguration": {
+     "MaxCapacity": 2,
+     "MinCapacity": 0.5
+    },
+    "StorageEncrypted": true,
+    "VpcSecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "RdsClusterSecurityGroup7E54DD55",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Snapshot",
+   "DeletionPolicy": "Snapshot",
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/Resource"
+   }
+  },
+  "RdsClusterwriter7D538DEB": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "DBClusterIdentifier": {
+     "Ref": "RdsCluster0F718D69"
+    },
+    "DBInstanceClass": "db.serverless",
+    "Engine": "aurora-postgresql",
+    "PromotionTier": 0,
+    "PubliclyAccessible": false
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/writer/Resource"
+   }
+  },
+  "RdsClusterreader59FB38DB": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "DBClusterIdentifier": {
+     "Ref": "RdsCluster0F718D69"
+    },
+    "DBInstanceClass": "db.serverless",
+    "Engine": "aurora-postgresql",
+    "PromotionTier": 2,
+    "PubliclyAccessible": false
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsCluster/reader/Resource"
+   }
+  },
+  "RdsProxyIAMRoleC275BF0F": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "rds.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsProxy/IAMRole/Resource"
+   }
+  },
+  "RdsProxyIAMRoleDefaultPolicy82D221E7": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "RdsSecretB2B964C3"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "RdsProxyIAMRoleDefaultPolicy82D221E7",
+    "Roles": [
+     {
+      "Ref": "RdsProxyIAMRoleC275BF0F"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsProxy/IAMRole/DefaultPolicy/Resource"
+   }
+  },
+  "RdsProxyE8EC09E1": {
+   "Type": "AWS::RDS::DBProxy",
+   "Properties": {
+    "Auth": [
+     {
+      "AuthScheme": "SECRETS",
+      "IAMAuth": "DISABLED",
+      "SecretArn": {
+       "Ref": "RdsSecretB2B964C3"
+      }
+     }
+    ],
+    "DBProxyName": "DatabaseStackRdsProxyF07131BE",
+    "EngineFamily": "POSTGRESQL",
+    "RequireTLS": true,
+    "RoleArn": {
+     "Fn::GetAtt": [
+      "RdsProxyIAMRoleC275BF0F",
+      "Arn"
+     ]
+    },
+    "VpcSecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "RdsClusterSecurityGroup7E54DD55",
+       "GroupId"
+      ]
+     }
+    ],
+    "VpcSubnetIds": [
+     {
+      "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet1Subnet588C411B3A8F06AF"
+     },
+     {
+      "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet2SubnetE20E2EF38A6298BE"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsProxy/Resource"
+   }
+  },
+  "RdsProxyProxyTargetGroupD847F6F0": {
+   "Type": "AWS::RDS::DBProxyTargetGroup",
+   "Properties": {
+    "ConnectionPoolConfigurationInfo": {},
+    "DBClusterIdentifiers": [
+     {
+      "Ref": "RdsCluster0F718D69"
+     }
+    ],
+    "DBProxyName": {
+     "Ref": "RdsProxyE8EC09E1"
+    },
+    "TargetGroupName": "default"
+   },
+   "DependsOn": [
+    "RdsCluster0F718D69"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/RdsProxy/ProxyTargetGroup"
+   }
+  },
+  "OpenSearchDomainSecurityGroupBA9F90EC": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for domain OpenSearchDomain",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/OpenSearchDomain/SecurityGroup/Resource"
+   }
+  },
+  "OpenSearchDomain85D65221": {
+   "Type": "AWS::OpenSearchService::Domain",
+   "Properties": {
+    "ClusterConfig": {
+     "DedicatedMasterEnabled": false,
+     "InstanceCount": 2,
+     "InstanceType": "t3.small.search",
+     "ZoneAwarenessConfig": {
+      "AvailabilityZoneCount": 2
+     },
+     "ZoneAwarenessEnabled": true
+    },
+    "DomainEndpointOptions": {
+     "EnforceHTTPS": true,
+     "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
+    },
+    "EBSOptions": {
+     "EBSEnabled": true,
+     "VolumeSize": 10,
+     "VolumeType": "gp2"
+    },
+    "EncryptionAtRestOptions": {
+     "Enabled": true
+    },
+    "EngineVersion": "OpenSearch_2.11",
+    "LogPublishingOptions": {},
+    "NodeToNodeEncryptionOptions": {
+     "Enabled": true
+    },
+    "VPCOptions": {
+     "SecurityGroupIds": [
+      {
+       "Fn::GetAtt": [
+        "OpenSearchDomainSecurityGroupBA9F90EC",
+        "GroupId"
+       ]
+      }
+     ],
+     "SubnetIds": [
+      {
+       "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet1Subnet588C411B3A8F06AF"
+      },
+      {
+       "Fn::ImportValue": "NetworkStack:ExportsOutputRefVpcPrivateDataSubnet2SubnetE20E2EF38A6298BE"
+      }
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/OpenSearchDomain/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31QwU7DMAz9lt3TwFqJO2wS2omq447czLRhbVLZDlBV+Xe6lCI0JE5+fu/5xU6ut/mdvt3AB2fmdM46W+vpKGDOaqZeJkZDKNyDgwZpllKvdq/uGy3lGahBuZd5sO3R/TJcK1HRifW0B4EaGHddYEFSx1A7lEfyYbjM7h/+EKszNQfHAs6gWnNK8p/jol3DZYOUFBWaPB0RyMr4k/4/cXANIXNUFno9Vb7DiyXV0nfWpMcWFJUf0DECmZaR3q3B+Vbfg3Vpo4RiVBWyD2RS0FOQIaQfW9moylFa724KvS10sXljazMKTmyPulrqF9QUh2S5AQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "DatabaseStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "RdsEndpoint": {
+   "Description": "RDS proxy endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "RdsProxyE8EC09E1",
+     "Endpoint"
+    ]
+   },
+   "Export": {
+    "Name": "RdsEndpoint"
+   }
+  },
+  "RdsPort": {
+   "Description": "RDS port",
+   "Value": "5432",
+   "Export": {
+    "Name": "RdsPort"
+   }
+  },
+  "OpenSearchEndpoint": {
+   "Description": "OpenSearch endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "OpenSearchDomain85D65221",
+     "DomainEndpoint"
+    ]
+   },
+   "Export": {
+    "Name": "OpenSearchEndpoint"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
