@@ -32,33 +32,42 @@ export function Sidebar({ className }: SidebarProps) {
         className
       )}
     >
-      {/* Logo section */}
-      <div className="flex h-16 items-center justify-center border-b px-3">
+      {/* Logo section with toggle button */}
+      <div className="flex h-16 items-center justify-center px-2">
         {collapsed ? (
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">BO</span>
-          </div>
+          <>
+            {/* Toggle button - centered when collapsed */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-foreground shadow-none"
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </>
         ) : (
-          <Logo />
+          <>
+            <Logo />
+            <div className="flex-1" />
+            {/* Toggle button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-foreground shadow-none"
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </>
         )}
       </div>
-
-      {/* Toggle button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute -right-3 top-7 z-50 h-6 w-6 rounded-full border bg-card shadow-md"
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </Button>
+      
+      {/* Separator below logo */}
+      <Separator />
 
       {/* Menu content */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 py-4 px-2">
         <div className="space-y-4">
           {/* Main menu */}
           <SidebarMenu items={MAIN_MENU_ITEMS} collapsed={collapsed} />
