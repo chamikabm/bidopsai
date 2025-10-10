@@ -1,13 +1,39 @@
 /**
  * Authentication Background Component
- * 
+ *
  * Provides a full-screen futuristic animated background for auth pages
  * with CSS-based animations for optimal performance.
  */
 
 'use client';
 
+import { useMemo } from 'react';
+
+// Generate stable particle configurations
+function generateParticles(count: number) {
+  // Use a simple seeded random for consistent SSR/CSR
+  const seed = 12345;
+  let random = seed;
+  
+  const seededRandom = () => {
+    random = (random * 9301 + 49297) % 233280;
+    return random / 233280;
+  };
+  
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    width: seededRandom() * 4 + 2,
+    height: seededRandom() * 4 + 2,
+    left: seededRandom() * 100,
+    top: seededRandom() * 100,
+    delay: seededRandom() * 5,
+    duration: seededRandom() * 10 + 10,
+  }));
+}
+
 export function AuthBackground() {
+  const particles = useMemo(() => generateParticles(20), []);
+  
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
       {/* Animated gradient background */}
@@ -15,17 +41,17 @@ export function AuthBackground() {
       
       {/* Floating particles */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {particles.map((particle) => (
           <div
-            key={i}
+            key={particle.id}
             className="absolute rounded-full bg-primary/20 animate-float"
             style={{
-              width: `${Math.random() * 4 + 2}px`,
-              height: `${Math.random() * 4 + 2}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${Math.random() * 10 + 10}s`,
+              width: `${particle.width}px`,
+              height: `${particle.height}px`,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              animationDelay: `${particle.delay}s`,
+              animationDuration: `${particle.duration}s`,
             }}
           />
         ))}

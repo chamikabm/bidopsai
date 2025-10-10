@@ -57,6 +57,8 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
 
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       username: '',
       password: '',
@@ -67,18 +69,31 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
    * Handle form submission
    */
   async function onSubmit(values: SignInFormValues) {
-    signInMutation.mutate(values, {
-      onSuccess: (result) => {
-        if (result.isSignedIn) {
-          // Call success callback if provided
-          onSuccess?.();
-          
-          // Redirect to target page
-          router.push(redirectTo);
-        }
-        // If not signed in, nextStep is handled by useSignIn hook (toast messages)
-      },
-    });
+    try {
+      signInMutation.mutate(values, {
+        onSuccess: (result) => {
+          if (result.isSignedIn) {
+            // Call success callback if provided
+            onSuccess?.();
+            
+            // Redirect to target page
+            router.push(redirectTo);
+          }
+          // If not signed in, nextStep is handled by useSignIn hook (toast messages)
+        },
+      });
+    } catch (error) {
+      // Form validation errors are handled by React Hook Form
+      console.error('Form submission error:', error);
+    }
+  }
+  
+  /**
+   * Handle form errors
+   */
+  function onError(errors: any) {
+    console.log('Form validation errors:', errors);
+    // Errors will be displayed by FormMessage components
   }
 
   /**
@@ -154,7 +169,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
 
       {/* Username/Password Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
           <FormField
             control={form.control}
             name="username"
