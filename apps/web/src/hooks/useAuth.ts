@@ -1,9 +1,9 @@
 /**
  * Authentication Hook
- * 
+ *
  * Provides a React-friendly interface to AWS Cognito authentication
  * with TanStack Query integration for optimistic UI updates and caching.
- * 
+ *
  * Features:
  * - Sign in with username/password
  * - Sign in with Google OAuth
@@ -13,6 +13,7 @@
  * - Email confirmation
  * - MFA setup and verification
  * - Session management with automatic refresh
+ * - Mock auth bypass for testing (NEXT_PUBLIC_MOCK_AUTH=true)
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +29,7 @@ import {
   fetchAuthSession,
   updatePassword,
 } from '@/lib/auth/cognito';
+import { MOCK_AUTH_ENABLED, mockSignIn, hasMockSession, clearMockSession } from '@/lib/auth/mock-auth';
 import { toast } from 'sonner';
 
 /**
@@ -47,6 +49,11 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: authKeys.currentUser(),
     queryFn: async () => {
+      // Mock auth bypass
+      if (MOCK_AUTH_ENABLED && hasMockSession()) {
+        return { username: 'mock-user', userId: 'mock-123' };
+      }
+      
       try {
         const user = await getCurrentUser();
         return user;
@@ -88,6 +95,12 @@ export function useSignIn() {
 
   return useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
+      // Mock auth bypass for testing
+      if (MOCK_AUTH_ENABLED) {
+        console.warn('⚠️  MOCK AUTH ENABLED - Bypassing Cognito authentication');
+        return await mockSignIn(username, password);
+      }
+      
       return await signIn(username, password);
     },
     onSuccess: (result) => {
@@ -257,6 +270,12 @@ export function useSignOut() {
 
   return useMutation({
     mutationFn: async () => {
+      // Mock auth bypass
+      if (MOCK_AUTH_ENABLED) {
+        clearMockSession();
+        return;
+      }
+      
       return await signOut();
     },
     onSuccess: () => {

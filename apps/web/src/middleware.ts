@@ -1,12 +1,16 @@
 /**
  * Next.js Middleware
- * 
+ *
  * Handles authentication and authorization checks for protected routes.
  * This middleware runs on every request to verify user authentication via Cognito.
+ * Supports mock auth bypass for testing (NEXT_PUBLIC_MOCK_AUTH=true)
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+// Check if mock auth is enabled
+const MOCK_AUTH_ENABLED = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ['/signin', '/signup', '/forgot-password'];
@@ -37,6 +41,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/static') ||
     pathname.includes('.')
   ) {
+    return NextResponse.next();
+  }
+  
+  // Mock auth bypass - allow all requests when enabled
+  if (MOCK_AUTH_ENABLED) {
+    console.log('🔧 MOCK AUTH: Middleware bypassed for', pathname);
     return NextResponse.next();
   }
   
