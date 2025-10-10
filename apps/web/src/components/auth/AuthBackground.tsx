@@ -1,141 +1,173 @@
 /**
  * Authentication Background Component
- *
- * Provides a full-screen futuristic animated background for auth pages
- * with CSS-based animations for optimal performance.
- * Inspired by: Bloomberg Terminal + Vercel + Cyberpunk aesthetics
+ * 
+ * Particle network animation with connected dots forming geometric shapes
+ * Classic futuristic effect with triangles, lines, and polygons
  */
 
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 
-// Generate stable particle configurations
-function generateParticles(count: number, seed: number) {
-  let random = seed;
-  
-  const seededRandom = () => {
-    random = (random * 9301 + 49297) % 233280;
-    return random / 233280;
-  };
-  
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    width: seededRandom() * 4 + 3,
-    height: seededRandom() * 4 + 3,
-    left: seededRandom() * 100,
-    top: seededRandom() * 100,
-    delay: seededRandom() * 5,
-    duration: seededRandom() * 15 + 15,
-    opacity: seededRandom() * 0.5 + 0.5, // Much more visible: 0.5-1.0
-  }));
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
 }
 
 export function AuthBackground() {
-  const particles = useMemo(() => generateParticles(80, 12345), []);
-  const largeOrbs = useMemo(() => generateParticles(15, 54321), []);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const animationFrameRef = useRef<number>(0);
   
+  const particleCount = 100;
+  const connectionDistance = 120;
+  const particleSpeed = 0.5;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Get theme colors from CSS variables
+    const getThemeColor = (variable: string) => {
+      const value = getComputedStyle(document.documentElement)
+        .getPropertyValue(variable)
+        .trim();
+      return value;
+    };
+
+    // Set canvas size
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize particles
+    const initParticles = () => {
+      particlesRef.current = Array.from({ length: particleCount }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * particleSpeed,
+        vy: (Math.random() - 0.5) * particleSpeed,
+        radius: Math.random() * 2 + 1,
+      }));
+    };
+    initParticles();
+
+    // Animation loop
+    const animate = () => {
+      if (!ctx || !canvas) return;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const particles = particlesRef.current;
+
+      // Update and draw particles
+      particles.forEach((particle, i) => {
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Bounce off edges
+        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+
+        // Keep within bounds
+        particle.x = Math.max(0, Math.min(canvas.width, particle.x));
+        particle.y = Math.max(0, Math.min(canvas.height, particle.y));
+
+        // Draw connections to nearby particles
+        for (let j = i + 1; j < particles.length; j++) {
+          const other = particles[j];
+          const dx = particle.x - other.x;
+          const dy = particle.y - other.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < connectionDistance) {
+            const opacity = 1 - distance / connectionDistance;
+            ctx.beginPath();
+            const primaryColor = getThemeColor('--color-primary');
+            // Parse HSL and convert to rgba
+            const hslMatch = primaryColor.match(/hsl\(([^)]+)\)/);
+            if (hslMatch) {
+              const [h, s, l] = hslMatch[1].split(/\s+/);
+              ctx.strokeStyle = `hsla(${h}, ${s}, ${l}, ${opacity * 0.4})`;
+            } else {
+              ctx.strokeStyle = `rgba(59, 130, 246, ${opacity * 0.4})`;
+            }
+            ctx.lineWidth = 1;
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.stroke();
+          }
+        }
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        const primaryColor = getThemeColor('--color-primary');
+        const hslMatch = primaryColor.match(/hsl\(([^)]+)\)/);
+        if (hslMatch) {
+          const [h, s, l] = hslMatch[1].split(/\s+/);
+          ctx.fillStyle = `hsla(${h}, ${s}, ${l}, 0.8)`;
+          ctx.shadowColor = `hsla(${h}, ${s}, ${l}, 0.5)`;
+        } else {
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+          ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+        }
+        ctx.fill();
+        
+        // Add glow
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-slate-950">
-      {/* Animated gradient background - MORE VIBRANT */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-slate-950 to-purple-900/20" />
+    <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
+      {/* Animated gradient background using theme colors */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10" />
       
-      {/* Small particles - MUCH BRIGHTER AND BIGGER */}
-      <div className="absolute inset-0">
-        {particles.map((particle) => (
-          <div
-            key={particle.id}
-            className="absolute rounded-full bg-blue-400"
-            style={{
-              width: `${particle.width}px`,
-              height: `${particle.height}px`,
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-              opacity: particle.opacity,
-              animation: `float ${particle.duration}s ease-in-out infinite`,
-              animationDelay: `${particle.delay}s`,
-              boxShadow: `0 0 ${particle.width * 6}px rgba(59, 130, 246, 0.8), 0 0 ${particle.width * 12}px rgba(59, 130, 246, 0.4)`,
-            }}
-          />
-        ))}
+      {/* Canvas for particle network */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ mixBlendMode: 'screen' as const }}
+      />
+      
+      {/* Center spotlight using theme primary color */}
+      <div className="absolute inset-0 opacity-50">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.15)_0%,transparent_50%)]" />
       </div>
       
-      {/* Larger glowing orbs - MORE PROMINENT */}
-      <div className="absolute inset-0">
-        {largeOrbs.map((orb) => (
-          <div
-            key={`orb-${orb.id}`}
-            className="absolute rounded-full blur-3xl"
-            style={{
-              width: `${orb.width * 60}px`,
-              height: `${orb.height * 60}px`,
-              left: `${orb.left}%`,
-              top: `${orb.top}%`,
-              background: `radial-gradient(circle, rgba(59, 130, 246, ${orb.opacity * 0.6}) 0%, transparent 70%)`,
-              animation: `breath ${orb.duration * 1.5}s ease-in-out infinite`,
-              animationDelay: `${orb.delay}s`,
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Scanlines effect - MORE VISIBLE */}
+      {/* Scanlines effect using theme color */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-20"
+        className="pointer-events-none absolute inset-0 opacity-10"
         style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(59, 130, 246, 0.1) 2px, rgba(59, 130, 246, 0.1) 4px)',
+          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary) / 0.05) 2px, hsl(var(--primary) / 0.05) 4px)',
         }}
       />
-      
-      {/* Center spotlight - BRIGHTER */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.25)_0%,transparent_50%)]" />
-      
-      {/* Animated data streams - MUCH MORE VISIBLE */}
-      <div className="absolute inset-0 overflow-hidden opacity-60">
-        {[...Array(8)].map((_, i) => (
-          <div
-            key={`stream-${i}`}
-            className="absolute h-full w-[2px]"
-            style={{
-              left: `${(i + 1) * 11}%`,
-              background: 'linear-gradient(to bottom, transparent 0%, rgba(59, 130, 246, 0.8) 30%, rgba(59, 130, 246, 0.8) 70%, transparent 100%)',
-              animation: `float ${18 + i * 2}s linear infinite`,
-              animationDelay: `${i * -2}s`,
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Additional horizontal data streams for more dynamic feel */}
-      <div className="absolute inset-0 overflow-hidden opacity-30">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={`h-stream-${i}`}
-            className="absolute w-full h-[1px]"
-            style={{
-              top: `${(i + 1) * 18}%`,
-              background: 'linear-gradient(to right, transparent 0%, rgba(59, 130, 246, 0.6) 30%, rgba(59, 130, 246, 0.6) 70%, transparent 100%)',
-              animation: `float ${25 + i * 3}s linear infinite`,
-              animationDelay: `${i * -3}s`,
-            }}
-          />
-        ))}
-      </div>
-      
-      {/* Grid overlay */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, hsl(var(--primary) / 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, hsl(var(--primary) / 0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px',
-        }}
-      />
-      
-      {/* Radial gradient spotlight */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.15),transparent_50%)]" />
       
       {/* Theme-specific effects */}
       <FuturisticEffects />
