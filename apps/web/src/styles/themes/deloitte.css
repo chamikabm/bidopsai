@@ -1,0 +1,27 @@
+/* Deloitte Brand Theme Variables */
+.theme-deloitte {
+  --background: 0 0% 96%;
+  --foreground: 0 0% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 13%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 13%;
+  --primary: 142 76% 36%;
+  --primary-foreground: 0 0% 96%;
+  --secondary: 0 0% 87%;
+  --secondary-foreground: 0 0% 13%;
+  --muted: 0 0% 91%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 142 76% 36%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 0 0% 87%;
+  --input: 0 0% 87%;
+  --ring: 142 76% 36%;
+  
+  /* Deloitte specific colors */
+  --deloitte-green: 142 76% 36%;
+  --deloitte-dark: 0 0% 13%;
+  --deloitte-light: 0 0% 96%;
+}

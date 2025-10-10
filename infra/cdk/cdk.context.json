@@ -1,0 +1,27 @@
+{
+  "availability-zones:account=058264088919:region=us-east-2": [
+    "us-east-2a",
+    "us-east-2b",
+    "us-east-2c"
+  ],
+  "availability-zones:account=058264088919:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e",
+    "us-east-1f"
+  ],
+  "hosted-zone:account=058264088919:domainName=antonputra.com:region=us-east-1": {
+    "Id": "/hostedzone/Z0048429115V80QTCDKSQ",
+    "Name": "antonputra.com."
+  },
+  "availability-zones:account=568790270051:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e",
+    "us-east-1f"
+  ]
+}

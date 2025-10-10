@@ -1,0 +1,101 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+e2e
+playwright-report
+test-results
+
+# Next.js
+.next
+out
+.turbo
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+.env*.local
+.env.development
+.env.test
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHANGELOG.md
+*.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Amplify
+amplify
+.amplify
+
+# Vitest
+vitest.config.ts
+
+# Playwright
+playwright.config.ts
+
+# ESLint
+.eslintrc.json
+eslint.config.mjs
+
+# Prettier
+.prettierrc
+.prettierignore
+
+# Task completion docs
+TASK_*.md
+AUTHENTICATION_IMPLEMENTATION.md
+FIXES_APPLIED.md
+SECURITY_AND_WARNINGS.md

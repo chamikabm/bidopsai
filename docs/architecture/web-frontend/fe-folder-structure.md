@@ -46,7 +46,7 @@ bid-automation-platform/
 │   │   │   │       └── route.ts                       # NextAuth.js with Cognito provider (username/password + Google)
 │   │   │   ├── graphql/
 │   │   │   │   └── route.ts                           # GraphQL proxy to backend (all CRUD operations)
-│   │   │   └── agent-core/
+│   │   │   └── workflow-agents/
 │   │   │       └── invocations/
 │   │   │           └── route.ts                       # Proxy to AWS AgentCore /invocations endpoint (SSE streams)
 │   │   ├── layout.tsx                                 # Root layout: providers, fonts, metadata
@@ -285,7 +285,7 @@ bid-automation-platform/
 │   │   │       ├── artifacts.ts                       # GraphQL mutations for artifacts
 │   │   │       └── agentExecution.ts                  # GraphQL mutation to trigger agent workflow
 │   │   ├── api/
-│   │   │   ├── agent-core.ts                          # AgentCore API client (POST to /invocations)
+│   │   │   ├── workflow-agents.ts                          # AgentCore API client (POST to /invocations)
 │   │   │   ├── s3.ts                                  # S3 upload utilities (presigned URLs)
 │   │   │   └── sse-client.ts                          # SSE helper for AgentCore streams
 │   │   ├── editor/

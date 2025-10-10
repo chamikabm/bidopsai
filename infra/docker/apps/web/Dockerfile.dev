@@ -1,0 +1,38 @@
+# Development Dockerfile for bidops.ai web application
+# Optimized for hot reload and fast development
+
+FROM node:22-alpine AS base
+RUN apk add --no-cache libc6-compat git
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY apps/web/package*.json ./
+RUN npm ci && \
+    npm cache clean --force
+
+# Development image with hot reload
+FROM base AS dev
+WORKDIR /app
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files for reference
+COPY apps/web/package*.json ./
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV WATCHPACK_POLLING=true
+
+# Expose port
+EXPOSE 3000
+
+# Create volume mount points for hot reload
+VOLUME ["/app/src", "/app/public"]
+
+# Start the development server with Turbopack
+CMD ["npm", "run", "dev"]

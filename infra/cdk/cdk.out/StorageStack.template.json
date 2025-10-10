@@ -1,0 +1,292 @@
+{
+ "Resources": {
+  "KnowledgeBaseBucketC011DD60": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/KnowledgeBaseBucket/Resource"
+   }
+  },
+  "LogsBucket9C4D8843": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/LogsBucket/Resource"
+   }
+  },
+  "LogsBucketPolicyD70D9252": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "LogsBucket9C4D8843"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:GetBucketAcl",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudtrail.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::GetAtt": [
+         "LogsBucket9C4D8843",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "s3:PutObject",
+       "Condition": {
+        "StringEquals": {
+         "s3:x-amz-acl": "bucket-owner-full-control"
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudtrail.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "LogsBucket9C4D8843",
+            "Arn"
+           ]
+          },
+          "/AWSLogs/058264088919/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/LogsBucket/Policy/Resource"
+   }
+  },
+  "BdaBucketC3CD6099": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/BdaBucket/Resource"
+   }
+  },
+  "EcrRepository4D7B3EE1": {
+   "Type": "AWS::ECR::Repository",
+   "Properties": {
+    "ImageScanningConfiguration": {
+     "ScanOnPush": true
+    },
+    "ImageTagMutability": "IMMUTABLE",
+    "RepositoryName": "hackathon/app"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/EcrRepository/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/0WKXQ7CIBCEz9J3WG1JPIAewKYewNQV40plG1hiGsLd/cGkTzPfN9NB2+1g24yvqPHq9EQXyCcZ0amPOudoIO8TOivqcPP/VqPniXBZdeWiLAbIg505knD4HVYq5cvHJHOSukROAW1R/SJ39hsDrQHTPCKRDskLPS0MNd8mwo9MrAAAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "StorageStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "KnowledgeBaseBucketName": {
+   "Description": "Knowledge base bucket name",
+   "Value": {
+    "Ref": "KnowledgeBaseBucketC011DD60"
+   },
+   "Export": {
+    "Name": "KnowledgeBaseBucketName"
+   }
+  },
+  "LogsBucketName": {
+   "Description": "Logs bucket name",
+   "Value": {
+    "Ref": "LogsBucket9C4D8843"
+   },
+   "Export": {
+    "Name": "LogsBucketName"
+   }
+  },
+  "BdaBucketName": {
+   "Description": "BDA bucket name",
+   "Value": {
+    "Ref": "BdaBucketC3CD6099"
+   },
+   "Export": {
+    "Name": "BdaBucketName"
+   }
+  },
+  "EcrRepositoryUri": {
+   "Description": "ECR repository URI",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Fn::Select": [
+        4,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "EcrRepository4D7B3EE1",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".dkr.ecr.",
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "EcrRepository4D7B3EE1",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "EcrRepository4D7B3EE1"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "EcrRepositoryUri"
+   }
+  },
+  "ExportsOutputRefLogsBucket9C4D88434A6140BD": {
+   "Value": {
+    "Ref": "LogsBucket9C4D8843"
+   },
+   "Export": {
+    "Name": "StorageStack:ExportsOutputRefLogsBucket9C4D88434A6140BD"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

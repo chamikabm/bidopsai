@@ -1,0 +1,1 @@
+export { MonitoringInitializer } from './MonitoringInitializer';
