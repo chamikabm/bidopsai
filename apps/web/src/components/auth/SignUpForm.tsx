@@ -203,7 +203,10 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
 
         {/* Confirmation Form */}
         <Form {...confirmationForm}>
-          <form onSubmit={confirmationForm.handleSubmit(onConfirmSubmit)} className="space-y-4">
+          <form
+            onSubmit={confirmationForm.handleSubmit(onConfirmSubmit)}
+            className="auth-form space-y-4"
+          >
             <FormField
               control={confirmationForm.control}
               name="confirmationCode"
@@ -223,14 +226,14 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                   <FormDescription>
                     Enter the 6-digit code from your email
                   </FormDescription>
-                  <FormMessage />
+                  <FormMessage className="auth-error" />
                 </FormItem>
               )}
             />
 
             <Button
               type="submit"
-              className="w-full"
+              className="auth-submit w-full"
               disabled={confirmSignUpMutation.isPending}
             >
               {confirmSignUpMutation.isPending && (
@@ -285,7 +288,10 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
 
       {/* Sign Up Form */}
       <Form {...signUpForm}>
-        <form onSubmit={signUpForm.handleSubmit(onSignUpSubmit)} className="space-y-4">
+        <form
+          onSubmit={signUpForm.handleSubmit(onSignUpSubmit)}
+          className="auth-form space-y-4"
+        >
           {/* Username */}
           <FormField
             control={signUpForm.control}
@@ -304,7 +310,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                 <FormDescription>
                   Letters, numbers, and ._- characters only
                 </FormDescription>
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
@@ -325,7 +331,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     disabled={signUpMutation.isPending}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
@@ -346,7 +352,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                       disabled={signUpMutation.isPending}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="auth-error" />
                 </FormItem>
               )}
             />
@@ -365,7 +371,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                       disabled={signUpMutation.isPending}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="auth-error" />
                 </FormItem>
               )}
             />
@@ -388,7 +394,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                   />
                 </FormControl>
                 <PasswordStrengthIndicator password={field.value} />
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
@@ -409,14 +415,14 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     disabled={signUpMutation.isPending}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
 
           <Button
             type="submit"
-            className="w-full"
+            className="auth-submit w-full"
             disabled={signUpMutation.isPending}
           >
             {signUpMutation.isPending && (

@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSignIn } from '@/hooks/useAuth';
@@ -96,7 +96,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   /**
    * Handle form errors
    */
-  function onError(errors: any) {
+  function onError(errors: FieldErrors<SignInFormValues>) {
     console.log('Form validation errors:', errors);
     // Errors will be displayed by FormMessage components
   }
@@ -174,7 +174,10 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
 
       {/* Username/Password Form */}
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit(onSubmit, onError)}
+          className="auth-form space-y-4"
+        >
           <FormField
             control={form.control}
             name="username"
@@ -189,7 +192,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
@@ -218,14 +221,14 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="auth-error" />
               </FormItem>
             )}
           />
 
           <Button
             type="submit"
-            className="w-full"
+            className="auth-submit w-full"
             disabled={isLoading}
           >
             {signInMutation.isPending && (
