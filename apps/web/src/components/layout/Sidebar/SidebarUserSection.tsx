@@ -75,7 +75,7 @@ export function SidebarUserSection({ collapsed = false }: SidebarUserSectionProp
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-10 w-10">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 border border-[hsl(var(--sidebar-border))]/80 shadow-sm">
               <AvatarImage src={undefined} alt={userName} />
               <AvatarFallback className="bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
             </Avatar>
@@ -106,7 +106,7 @@ export function SidebarUserSection({ collapsed = false }: SidebarUserSectionProp
             variant="ghost"
             className="w-full justify-start gap-3 px-2 text-foreground"
           >
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 border border-[hsl(var(--sidebar-border))]/80 shadow-sm">
               <AvatarImage src={undefined} alt={userName} />
               <AvatarFallback className="bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
             </Avatar>

@@ -23,6 +23,14 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const separatorClass = cn(
+    'bg-[hsl(var(--sidebar-border))]/60',
+    collapsed ? 'mx-1' : 'mx-3'
+  );
+  const middleSeparatorClass = cn(
+    'bg-[hsl(var(--sidebar-border))]/50',
+    collapsed ? 'mx-1' : 'mx-2'
+  );
 
   return (
     <aside
@@ -64,7 +72,7 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
       
       {/* Separator below logo */}
-      <Separator />
+      <Separator className={separatorClass} />
 
       {/* Menu content */}
       <ScrollArea className="flex-1 py-4 px-2">
@@ -72,7 +80,7 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Main menu */}
           <SidebarMenu items={MAIN_MENU_ITEMS} collapsed={collapsed} />
           
-          <Separator />
+          <Separator className={middleSeparatorClass} />
           
           {/* Settings menu */}
           <SidebarMenu items={SETTINGS_MENU_ITEMS} collapsed={collapsed} />
@@ -80,9 +88,9 @@ export function Sidebar({ className }: SidebarProps) {
       </ScrollArea>
 
       {/* User section */}
-      <div>
-        <Separator />
-        <div className="p-3">
+      <div className="pb-2">
+        <Separator className={middleSeparatorClass} />
+        <div className="px-2 pt-3">
           <SidebarUserSection collapsed={collapsed} />
         </div>
       </div>
