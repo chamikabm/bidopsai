@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { Upload, X, FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,8 @@ export function FileDropzone({
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const validateFiles = useCallback(
     (files: File[]): { valid: File[]; errors: string[] } => {
@@ -110,9 +112,17 @@ export function FileDropzone({
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       handleFiles(e.target.files);
+      if (e.target) {
+        e.target.value = '';
+      }
     },
     [handleFiles]
   );
+
+  const openFileDialog = useCallback(() => {
+    if (disabled) return;
+    inputRef.current?.click();
+  }, [disabled]);
 
   const removeFile = useCallback(
     (index: number) => {
@@ -138,16 +148,27 @@ export function FileDropzone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        onClick={openFileDialog}
+        onKeyDown={(event) => {
+          if (disabled) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openFileDialog();
+          }
+        }}
         className={cn(
-          'relative rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+          'relative rounded-lg border-2 border-dashed p-8 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
           isDragging && !disabled && 'border-primary bg-primary/5',
           !isDragging && !disabled && 'border-muted-foreground/25 hover:border-muted-foreground/50',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >
         <input
+          ref={inputRef}
           type="file"
-          id="file-upload"
+          id={inputId}
           className="sr-only"
           onChange={handleFileInput}
           accept={accept}
@@ -168,8 +189,11 @@ export function FileDropzone({
             <p className="text-xs text-muted-foreground">
               or{' '}
               <label
-                htmlFor="file-upload"
-                className="cursor-pointer font-medium text-primary hover:underline"
+                htmlFor={inputId}
+                className={cn(
+                  'cursor-pointer font-medium text-primary hover:underline',
+                  disabled && 'pointer-events-none opacity-50'
+                )}
               >
                 browse files
               </label>

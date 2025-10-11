@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -35,12 +35,22 @@ export default function RootLayout({
               (function() {
                 try {
                   const stored = localStorage.getItem('bidops-ui-storage');
-                  const theme = stored ? JSON.parse(stored).state?.theme || 'dark' : 'dark';
+                  const themes = ['light', 'dark', 'deloitte', 'futuristic'];
+                  const parsed = stored ? JSON.parse(stored) : null;
+                  const theme = parsed?.state?.theme && themes.includes(parsed.state.theme)
+                    ? parsed.state.theme
+                    : 'dark';
+
+                  themes.forEach((t) => document.documentElement.classList.remove(t));
                   document.documentElement.classList.add(theme);
                   document.documentElement.setAttribute('data-theme', theme);
                 } catch (e) {
-                  document.documentElement.classList.add('dark');
-                  document.documentElement.setAttribute('data-theme', 'dark');
+                  const fallback = 'dark';
+                  ['light', 'dark', 'deloitte', 'futuristic'].forEach((t) =>
+                    document.documentElement.classList.remove(t)
+                  );
+                  document.documentElement.classList.add(fallback);
+                  document.documentElement.setAttribute('data-theme', fallback);
                 }
               })();
             `,
