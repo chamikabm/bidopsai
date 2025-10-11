@@ -24,11 +24,11 @@ interface SidebarProps {
 export function Sidebar({ className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const separatorClass = cn(
-    'bg-[hsl(var(--sidebar-border))]/60',
+    'bg-[hsl(var(--sidebar-border))]/60 w-full',
     collapsed ? 'mx-1' : 'mx-3'
   );
   const middleSeparatorClass = cn(
-    'bg-[hsl(var(--sidebar-border))]/50',
+    'bg-[hsl(var(--sidebar-border))]/50 w-full',
     collapsed ? 'mx-1' : 'mx-2'
   );
 
@@ -88,9 +88,9 @@ export function Sidebar({ className }: SidebarProps) {
       </ScrollArea>
 
       {/* User section */}
-      <div className="pb-2">
+      <div className="px-2 pb-2">
         <Separator className={middleSeparatorClass} />
-        <div className="px-2 pt-3">
+        <div className="pt-3">
           <SidebarUserSection collapsed={collapsed} />
         </div>
       </div>
