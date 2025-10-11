@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -29,12 +29,28 @@ interface SidebarMenuItemProps {
 export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProps) {
   const pathname = usePathname();
   const hasSubItems = item.items && item.items.length > 0;
-  const isSubItemActive = hasSubItems && item.items?.some(subItem => pathname === subItem.href);
+
+  const pathMatches = (target?: string) => {
+    if (!target) return false;
+    const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = escaped.replace(/\\\[([^/]+)\\\]/g, '[^/]+');
+    const regex = new RegExp(`^${pattern}$`);
+    return regex.test(pathname);
+  };
+
+  const isActive = pathMatches(item.href);
+  const isSubItemActive = hasSubItems && item.items?.some((subItem) => pathMatches(subItem.href));
   
   // Auto-expand parent menu if a sub-item is active
-  const [isOpen, setIsOpen] = useState(isSubItemActive || false);
-  
-  const isActive = item.href ? pathname === item.href : false;
+  const [isOpen, setIsOpen] = useState(isSubItemActive);
+
+  useEffect(() => {
+    if (isSubItemActive) {
+      setIsOpen(true);
+    } else if (!isActive) {
+      setIsOpen(false);
+    }
+  }, [isSubItemActive, isActive]);
   const Icon = item.icon;
 
   // If it has sub-items, render as collapsible or dropdown
@@ -47,8 +63,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
             <Button
               variant="ghost"
               className={cn(
-                'w-full justify-center rounded-md text-foreground',
-                isSubItemActive && 'bg-accent text-accent-foreground font-medium'
+                'w-full justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-foreground))]',
+                isSubItemActive && 'bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))] font-semibold shadow-inner'
               )}
             >
               {Icon && <Icon className="h-4 w-4" />}
@@ -62,8 +78,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
                   <Link
                     href={subItem.href || '#'}
                     className={cn(
-                      'w-full cursor-pointer',
-                      isSubActive && 'bg-accent'
+                      'w-full cursor-pointer rounded-md transition-colors hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-foreground))]',
+                      isSubActive && 'bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))] font-medium shadow-inner'
                     )}
                   >
                     {subItem.label}
@@ -87,8 +103,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
         <Button
           variant="ghost"
           className={cn(
-            'w-full justify-start gap-2 text-foreground rounded-md',
-            (isSubItemActive || isOpen) && 'bg-accent text-accent-foreground font-medium'
+            'w-full justify-start gap-2 rounded-lg text-sidebar-foreground transition-colors hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-foreground))]',
+            (isSubItemActive || isActive) && 'bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))] font-semibold shadow-inner'
           )}
           onClick={() => setIsOpen(!isOpen)}
         >
@@ -111,8 +127,8 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      'w-full justify-start text-muted-foreground rounded-md h-8',
-                      isSubActive && 'bg-accent text-accent-foreground font-medium'
+                      'w-full justify-start h-8 rounded-md text-muted-foreground transition-colors hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-foreground))]',
+                      isSubActive && 'bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))] font-medium shadow-inner'
                     )}
                   >
                     {subItem.label}
@@ -137,9 +153,9 @@ export function SidebarMenuItem({ item, collapsed = false }: SidebarMenuItemProp
       <Button
         variant="ghost"
         className={cn(
-          'w-full rounded-md text-foreground',
+          'w-full rounded-lg text-sidebar-foreground transition-colors hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-foreground))]',
           collapsed ? 'justify-center' : 'justify-start gap-2',
-          isActive && 'bg-accent text-accent-foreground font-medium'
+          isActive && 'bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))] font-semibold shadow-inner'
         )}
       >
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
