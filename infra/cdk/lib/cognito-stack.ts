@@ -121,12 +121,9 @@ export class BidOpsAICognitoStack extends cdk.Stack {
       deletionProtection: environment === 'prod',
 
       // Removal policy
-      removalPolicy: environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
+      removalPolicy: environment === 'prod'
+        ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
-
-      // Advanced security
-      advancedSecurityMode: cognito.AdvancedSecurityMode.ENFORCED,
     });
 
     // Create User Pool Domain
@@ -157,9 +154,9 @@ export class BidOpsAICognitoStack extends cdk.Stack {
       },
 
       // Supported identity providers
+      // Note: Add GOOGLE after manually creating the Google identity provider
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
-        cognito.UserPoolClientIdentityProvider.GOOGLE,
       ],
 
       // Auth flows

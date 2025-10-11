@@ -118,7 +118,7 @@ export const permissionSchema = z.object({
 | Drafter | Full CRUD | Read Local | Read | Read | Up to QA |
 | Bidder | Full CRUD | CRUD Local | Read | Read | All Steps |
 | KB-Admin | Read | Full CRUD | None | None | None |
-| KB-View | Read | Read | None | None | None |
+| KB-View | None | Read | None | None | None |
 
 **State Management**:
 - TanStack Query: `['roles']` for all roles, `['permissions', roleId]` for role permissions

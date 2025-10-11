@@ -70,21 +70,26 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
    */
   async function onSubmit(values: SignInFormValues) {
     try {
+      console.log('🔐 Sign in form submitted:', { username: values.username });
       signInMutation.mutate(values, {
         onSuccess: (result) => {
+          console.log('✅ Sign in result:', result);
           if (result.isSignedIn) {
+            console.log('🎉 User is signed in! Redirecting to:', redirectTo);
             // Call success callback if provided
             onSuccess?.();
             
             // Redirect to target page
             router.push(redirectTo);
+          } else {
+            console.log('⏳ Sign in not complete, next step:', result.nextStep);
           }
           // If not signed in, nextStep is handled by useSignIn hook (toast messages)
         },
       });
     } catch (error) {
       // Form validation errors are handled by React Hook Form
-      console.error('Form submission error:', error);
+      console.error('❌ Form submission error:', error);
     }
   }
   

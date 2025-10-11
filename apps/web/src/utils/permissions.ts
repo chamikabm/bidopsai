@@ -45,82 +45,102 @@ export const ROLE_PERMISSIONS: Record<
     canAccessSubmissionAgent: true,
   },
   [UserRole.DRAFTER]: {
+    // Full CRUD on Projects
     canAccessProjects: true,
     canCreateProjects: true,
     canEditProjects: true,
-    canDeleteProjects: false,
+    canDeleteProjects: true,
+    // Read Local Knowledge Bases only
     canAccessKnowledgeBases: true,
     canCreateKnowledgeBases: false,
     canEditGlobalKnowledgeBases: false,
     canEditLocalKnowledgeBases: false,
     canDeleteKnowledgeBases: false,
-    canAccessUsers: false,
+    // Read Users only
+    canAccessUsers: true,
     canCreateUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
-    canAccessSettings: false,
+    // Read Settings only
+    canAccessSettings: true,
     canConfigureAgents: false,
     canManageIntegrations: false,
-    canAccessCommsAgent: false, // Can't go beyond QA
+    // Up to QA workflow step only
+    canAccessCommsAgent: false,
     canAccessSubmissionAgent: false,
   },
   [UserRole.BIDDER]: {
+    // Full CRUD on Projects
     canAccessProjects: true,
     canCreateProjects: true,
     canEditProjects: true,
-    canDeleteProjects: false,
+    canDeleteProjects: true,
+    // CRUD Local Knowledge Bases
     canAccessKnowledgeBases: true,
     canCreateKnowledgeBases: true,
     canEditGlobalKnowledgeBases: false,
     canEditLocalKnowledgeBases: true,
     canDeleteKnowledgeBases: true,
-    canAccessUsers: false,
+    // Read Users only
+    canAccessUsers: true,
     canCreateUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
-    canAccessSettings: false,
+    // Read Settings only
+    canAccessSettings: true,
     canConfigureAgents: false,
     canManageIntegrations: false,
-    canAccessCommsAgent: true, // Has access to full agentic flow
+    // All workflow steps
+    canAccessCommsAgent: true,
     canAccessSubmissionAgent: true,
   },
   [UserRole.KB_ADMIN]: {
+    // Read Projects only
     canAccessProjects: true,
     canCreateProjects: false,
     canEditProjects: false,
     canDeleteProjects: false,
+    // Full CRUD on Knowledge Bases
     canAccessKnowledgeBases: true,
     canCreateKnowledgeBases: true,
     canEditGlobalKnowledgeBases: true,
     canEditLocalKnowledgeBases: true,
     canDeleteKnowledgeBases: true,
+    // No access to Users
     canAccessUsers: false,
     canCreateUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
+    // No access to Settings
     canAccessSettings: false,
     canConfigureAgents: false,
     canManageIntegrations: false,
+    // No workflow access
     canAccessCommsAgent: false,
     canAccessSubmissionAgent: false,
   },
   [UserRole.KB_VIEW]: {
+    // Read Projects only
     canAccessProjects: true,
     canCreateProjects: false,
     canEditProjects: false,
     canDeleteProjects: false,
+    // Read Knowledge Bases only
     canAccessKnowledgeBases: true,
     canCreateKnowledgeBases: false,
     canEditGlobalKnowledgeBases: false,
     canEditLocalKnowledgeBases: false,
     canDeleteKnowledgeBases: false,
+    // No access to Users
     canAccessUsers: false,
     canCreateUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
+    // No access to Settings
     canAccessSettings: false,
     canConfigureAgents: false,
     canManageIntegrations: false,
+    // No workflow access
     canAccessCommsAgent: false,
     canAccessSubmissionAgent: false,
   },

@@ -5,21 +5,21 @@
  * Checks user roles and permissions for UI filtering and access control.
  */
 
-import { useCurrentUser } from './useAuth';
+import { useCurrentUser, useAuthSession } from './useAuth';
 import { UserRole } from '@/types/user.types';
 import { hasPermission, hasRole, getPrimaryRole, ROLE_PERMISSIONS } from '@/utils/permissions';
-import type { AuthUser } from 'aws-amplify/auth';
 
 /**
- * Extract user roles from Cognito user attributes
+ * Extract user roles from Cognito auth session
  */
-function getUserRoles(user: AuthUser | null | undefined): UserRole[] {
-  if (!user) return [];
+function getUserRolesFromSession(session: any): UserRole[] {
+  if (!session?.tokens?.idToken?.payload) return [];
   
-  // Get groups from Cognito user attributes
-  // Cognito stores groups in the user's token
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const groups = (user as any).signInUserSession?.accessToken?.payload?.['cognito:groups'] || [];
+  // Get groups from ID token payload
+  // Cognito stores groups in cognito:groups claim
+  const groups = session.tokens.idToken.payload['cognito:groups'] || [];
+  
+  console.log('📋 User groups from token:', groups);
   
   return groups.map((group: string) => group as UserRole);
 }
@@ -31,8 +31,11 @@ function getUserRoles(user: AuthUser | null | undefined): UserRole[] {
  */
 export function usePermissions() {
   const { data: user } = useCurrentUser();
-  const roles = getUserRoles(user ?? null);
+  const { data: session } = useAuthSession();
+  const roles = getUserRolesFromSession(session);
   const primaryRole = roles.length > 0 ? getPrimaryRole(roles) : null;
+  
+  console.log('🔐 usePermissions:', { user: user?.username, roles, primaryRole });
   
   return {
     // Current user roles
