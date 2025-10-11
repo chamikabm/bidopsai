@@ -41,34 +41,24 @@ export function Sidebar({ className }: SidebarProps) {
       )}
     >
       {/* Logo section with toggle button */}
-      <div className="flex h-16 items-center justify-center px-2">
-        {collapsed ? (
-          <>
-            {/* Toggle button - centered when collapsed */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-foreground shadow-none"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </>
-        ) : (
-          <>
-            <Logo />
-            <div className="flex-1" />
-            {/* Toggle button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 text-foreground shadow-none"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </>
+      <div
+        className={cn(
+          'flex h-16 items-center px-3 transition-all duration-300',
+          collapsed
+            ? 'justify-center'
+            : 'justify-between'
         )}
+      >
+        <Logo className={collapsed ? 'scale-95' : ''} showLabel={!collapsed} />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-foreground shadow-none"
+          onClick={() => setCollapsed((prev) => !prev)}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
       
       {/* Separator below logo */}
