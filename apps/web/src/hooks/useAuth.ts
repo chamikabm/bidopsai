@@ -29,6 +29,7 @@ import {
   updatePassword,
 } from '@/lib/auth/cognito';
 import { toast } from 'sonner';
+import { useAmplifyConfigured } from '@/components/providers/AmplifyConfigProvider';
 
 /**
  * Query Keys for React Query cache management
@@ -44,8 +45,11 @@ export const authKeys = {
  * Returns null if not authenticated
  */
 export function useCurrentUser() {
+  const isAmplifyConfigured = useAmplifyConfigured();
+
   return useQuery({
     queryKey: authKeys.currentUser(),
+    enabled: isAmplifyConfigured,
     queryFn: async () => {
       try {
         const user = await getCurrentUser();
@@ -55,7 +59,10 @@ export function useCurrentUser() {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: Infinity, // Keep in cache forever
     retry: false,
+    refetchOnMount: 'always', // Always refetch on mount to get fresh auth state
+    refetchOnWindowFocus: false, // Don't refetch on every focus
   });
 }
 
@@ -64,8 +71,11 @@ export function useCurrentUser() {
  * Returns null if not authenticated
  */
 export function useAuthSession() {
+  const isAmplifyConfigured = useAmplifyConfigured();
+
   return useQuery({
     queryKey: authKeys.session(),
+    enabled: isAmplifyConfigured,
     queryFn: async () => {
       try {
         const session = await fetchAuthSession();
@@ -75,7 +85,10 @@ export function useAuthSession() {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: Infinity, // Keep in cache forever
     retry: false,
+    refetchOnMount: 'always', // Always refetch on mount to get fresh auth state
+    refetchOnWindowFocus: false, // Don't refetch on every focus
   });
 }
 

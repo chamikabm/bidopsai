@@ -6,6 +6,7 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -27,11 +28,39 @@ interface SidebarUserSectionProps {
 export function SidebarUserSection({ collapsed = false }: SidebarUserSectionProps) {
   const { user, signOut } = useAuth();
   const { primaryRole } = usePermissions();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Avoid hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const handleSignOut = () => {
     signOut();
   };
   
+  // During SSR or when no user, render a placeholder to maintain consistent HTML structure
+  if (!isMounted) {
+    // Render same structure as when user exists, but with placeholder content
+    if (collapsed) {
+      return (
+        <Button variant="ghost" size="icon" className="h-10 w-10 opacity-0">
+          <div className="h-8 w-8" />
+        </Button>
+      );
+    }
+    return (
+      <Button variant="ghost" className="w-full justify-start gap-3 px-2 text-foreground opacity-0">
+        <div className="h-8 w-8 rounded-full" />
+        <div className="flex flex-col items-start text-left">
+          <span className="text-sm font-medium">Loading</span>
+          <span className="text-xs">...</span>
+        </div>
+      </Button>
+    );
+  }
+  
+  // After mount, if no user, return null
   if (!user) {
     return null;
   }

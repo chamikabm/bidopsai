@@ -1,11 +1,12 @@
 /**
  * Sidebar Menu Component
- * 
+ *
  * Main menu with role-based filtering
  */
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { SidebarMenuItem } from './SidebarMenuItem';
 import { MenuItem } from '@/types/menu.types';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -16,7 +17,13 @@ interface SidebarMenuProps {
 }
 
 export function SidebarMenu({ items, collapsed = false }: SidebarMenuProps) {
-  const { roles } = usePermissions();
+  const { roles, isLoading } = usePermissions();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Avoid hydration mismatch by only rendering loading state after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Filter menu items based on user roles
   const filterMenuItems = (menuItems: MenuItem[]): MenuItem[] => {
@@ -40,7 +47,20 @@ export function SidebarMenu({ items, collapsed = false }: SidebarMenuProps) {
     });
   };
   
-  const filteredItems = filterMenuItems(items);
+  // During SSR or initial mount, show all items without role filtering
+  // This prevents hydration mismatch
+  if (!isMounted) {
+    return (
+      <nav className="space-y-1">
+        {items.map((item) => (
+          <SidebarMenuItem key={item.id} item={item} collapsed={collapsed} />
+        ))}
+      </nav>
+    );
+  }
+  
+  // After mount, show loading or filtered items
+  const filteredItems = isLoading ? items : filterMenuItems(items);
   
   return (
     <nav className="space-y-1">

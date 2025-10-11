@@ -9,39 +9,46 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { configureAmplify, validateAmplifyConfig } from '@/lib/auth/amplify.config';
+
+const AmplifyConfigContext = createContext(false);
+
+export function useAmplifyConfigured(): boolean {
+  return useContext(AmplifyConfigContext);
+}
 
 interface AmplifyConfigProviderProps {
   children: React.ReactNode;
 }
 
 export function AmplifyConfigProvider({ children }: AmplifyConfigProviderProps) {
+  const [isConfigured, setIsConfigured] = useState(false);
+
   useEffect(() => {
-    console.log('🚀 AmplifyConfigProvider: Initializing...');
-    console.log('Environment variables:', {
-      region: process.env.NEXT_PUBLIC_AWS_REGION,
-      userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
-      clientId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID,
-      domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
-    });
     
     // Validate configuration
     const isValid = validateAmplifyConfig();
-    console.log('✅ Configuration valid:', isValid);
     
     if (!isValid) {
       console.error('❌ Amplify configuration is invalid. Authentication will not work.');
       console.error('Please check your environment variables:');
       console.error('- NEXT_PUBLIC_COGNITO_USER_POOL_ID');
       console.error('- NEXT_PUBLIC_COGNITO_USER_POOL_CLIENT_ID');
+      setIsConfigured(false);
       return;
     }
 
     // Initialize Amplify
     configureAmplify();
-    console.log('✅ Amplify configured successfully');
+    setIsConfigured(true);
   }, []);
 
-  return <>{children}</>;
+  const contextValue = useMemo(() => isConfigured, [isConfigured]);
+
+  return (
+    <AmplifyConfigContext.Provider value={contextValue}>
+      {children}
+    </AmplifyConfigContext.Provider>
+  );
 }

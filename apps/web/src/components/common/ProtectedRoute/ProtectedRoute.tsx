@@ -41,7 +41,7 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const router = useRouter();
   const permissions = usePermissions();
-  const { roles, hasRole } = permissions;
+  const { roles, hasRole, isLoading } = permissions;
 
   // Check if user is authenticated (has roles)
   const isAuthenticated = roles.length > 0;
@@ -62,17 +62,20 @@ export function ProtectedRoute({
   const hasAccess = hasRequiredRole && hasRequiredPermissions;
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      // Redirect to signin if not authenticated
-      router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname)}`);
-    } else if (!hasAccess && redirectTo) {
-      // Redirect to fallback route if no access
-      router.push(redirectTo);
+    // Only perform redirects after loading is complete
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        // Redirect to signin if not authenticated
+        router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname)}`);
+      } else if (!hasAccess && redirectTo) {
+        // Redirect to fallback route if no access
+        router.push(redirectTo);
+      }
     }
-  }, [isAuthenticated, hasAccess, redirectTo, router]);
+  }, [isLoading, isAuthenticated, hasAccess, redirectTo, router]);
 
   // Still loading authentication state
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

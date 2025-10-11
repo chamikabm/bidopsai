@@ -6,22 +6,28 @@
  */
 
 import { useCurrentUser, useAuthSession } from './useAuth';
+import type { AuthSession } from '@/lib/auth/cognito';
 import { UserRole } from '@/types/user.types';
 import { hasPermission, hasRole, getPrimaryRole, ROLE_PERMISSIONS } from '@/utils/permissions';
 
 /**
  * Extract user roles from Cognito auth session
  */
-function getUserRolesFromSession(session: any): UserRole[] {
-  if (!session?.tokens?.idToken?.payload) return [];
-  
-  // Get groups from ID token payload
-  // Cognito stores groups in cognito:groups claim
-  const groups = session.tokens.idToken.payload['cognito:groups'] || [];
-  
-  console.log('📋 User groups from token:', groups);
-  
-  return groups.map((group: string) => group as UserRole);
+function getUserRolesFromSession(session: AuthSession | null | undefined): UserRole[] {
+  const payload = session?.tokens?.idToken?.payload;
+  if (!payload) return [];
+
+  const rawGroups = payload['cognito:groups'];
+
+  if (Array.isArray(rawGroups)) {
+    return rawGroups.filter((group): group is UserRole => typeof group === 'string');
+  }
+
+  if (typeof rawGroups === 'string') {
+    return [rawGroups as UserRole];
+  }
+
+  return [];
 }
 
 /**
@@ -30,14 +36,18 @@ function getUserRolesFromSession(session: any): UserRole[] {
  * @returns Permission checking functions and user roles
  */
 export function usePermissions() {
-  const { data: user } = useCurrentUser();
-  const { data: session } = useAuthSession();
+  const { isLoading: isLoadingUser } = useCurrentUser();
+  const { data: session, isLoading: isLoadingSession } = useAuthSession();
   const roles = getUserRolesFromSession(session);
   const primaryRole = roles.length > 0 ? getPrimaryRole(roles) : null;
   
-  console.log('🔐 usePermissions:', { user: user?.username, roles, primaryRole });
+  // Loading state - true if either query is still loading
+  const isLoading = isLoadingUser || isLoadingSession;
   
   return {
+    // Loading state
+    isLoading,
+    
     // Current user roles
     roles,
     primaryRole,
