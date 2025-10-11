@@ -1,99 +1,85 @@
 /**
  * Dark Theme Variables
- * 
+ *
  * Modern dark theme optimized for low-light conditions
  * Reduces eye strain during nighttime or extended use
  */
 
+.dark,
 [data-theme='dark'] {
-  /* Background Colors */
+  color-scheme: dark;
+  
+  /* Tailwind CSS 4.x variables (with --color- prefix) */
+  --color-background: 222.2 84% 4.9%;
+  --color-foreground: 210 40% 98%;
+  --color-card: 222.2 84% 4.9%;
+  --color-card-foreground: 210 40% 98%;
+  --color-popover: 222.2 84% 4.9%;
+  --color-popover-foreground: 210 40% 98%;
+  --color-primary: 217.2 91.2% 59.8%;
+  --color-primary-foreground: 222.2 47.4% 11.2%;
+  --color-secondary: 217.2 32.6% 17.5%;
+  --color-secondary-foreground: 210 40% 98%;
+  --color-muted: 217.2 32.6% 17.5%;
+  --color-muted-foreground: 215 20.2% 65.1%;
+  --color-accent: 217.2 32.6% 17.5%;
+  --color-accent-foreground: 210 40% 98%;
+  --color-destructive: 0 62.8% 30.6%;
+  --color-destructive-foreground: 210 40% 98%;
+  --color-border: 217.2 32.6% 17.5%;
+  --color-input: 217.2 32.6% 17.5%;
+  --color-ring: 224.3 76.3% 48%;
+  --color-chart-1: 217.2 91.2% 59.8%;
+  --color-chart-2: 142.1 70.6% 45.3%;
+  --color-chart-3: 47.9 95.8% 53.1%;
+  --color-chart-4: 280.4 89% 60%;
+  --color-chart-5: 340.1 84.2% 47.8%;
+  
+  /* Legacy variables (without --color- prefix) for custom usage */
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
-  
-  /* Card/Surface Colors */
   --card: 222.2 84% 4.9%;
   --card-foreground: 210 40% 98%;
-  
-  /* Popover Colors */
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
-  
-  /* Primary Colors */
   --primary: 217.2 91.2% 59.8%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  
-  /* Secondary Colors */
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 40% 98%;
-  
-  /* Muted Colors */
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-  
-  /* Accent Colors */
   --accent: 217.2 32.6% 17.5%;
   --accent-foreground: 210 40% 98%;
-  
-  /* Destructive Colors */
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-  
-  /* Border Colors */
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  
-  /* Ring Colors */
   --ring: 224.3 76.3% 48%;
-  
-  /* Chart Colors */
   --chart-1: 217.2 91.2% 59.8%;
   --chart-2: 142.1 70.6% 45.3%;
   --chart-3: 47.9 95.8% 53.1%;
   --chart-4: 280.4 89% 60%;
   --chart-5: 340.1 84.2% 47.8%;
-  
-  /* Custom Application Colors */
   --success: 142.1 70.6% 45.3%;
   --success-foreground: 210 40% 98%;
-  
   --warning: 47.9 95.8% 53.1%;
   --warning-foreground: 222.2 84% 4.9%;
-  
   --info: 217.2 91.2% 59.8%;
   --info-foreground: 222.2 47.4% 11.2%;
-  
-  /* Sidebar Colors */
   --sidebar-background: 222.2 84% 3.9%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-border: 217.2 32.6% 17.5%;
   --sidebar-hover: 217.2 32.6% 17.5%;
-  
-  /* Top Navigation Colors */
   --nav-background: 222.2 84% 4.9%;
   --nav-foreground: 210 40% 98%;
   --nav-border: 217.2 32.6% 17.5%;
-  
-  /* AI Assistant Icon Colors */
   --ai-glow-primary: 217.2 91.2% 59.8%;
   --ai-glow-secondary: 142.1 70.6% 45.3%;
-  
-  /* Progress Bar Colors */
   --progress-background: 217.2 32.6% 17.5%;
   --progress-foreground: 217.2 91.2% 59.8%;
-  
-  /* Badge Colors */
   --badge-draft: 47.9 95.8% 53.1%;
   --badge-in-progress: 217.2 91.2% 59.8%;
   --badge-completed: 142.1 70.6% 45.3%;
   --badge-failed: 0 62.8% 30.6%;
-  
-  /* Shadow */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
-  
-  /* Border Radius */
   --radius: 0.5rem;
 }

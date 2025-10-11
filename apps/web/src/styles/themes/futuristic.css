@@ -1,93 +1,86 @@
 /**
  * Futuristic Cyberpunk Theme
- * 
+ *
  * Cutting-edge design inspired by sci-fi interfaces and cyberpunk aesthetics
  * Features neon accents, high contrast, and futuristic visual elements
  */
 
+.futuristic,
 [data-theme='futuristic'] {
-  /* Background Colors - Deep space black */
+  color-scheme: dark;
+  
+  /* Tailwind CSS 4.x variables (with --color- prefix) */
+  --color-background: 240 10% 3.9%;
+  --color-foreground: 180 100% 90%;
+  --color-card: 240 10% 6%;
+  --color-card-foreground: 180 100% 90%;
+  --color-popover: 240 10% 6%;
+  --color-popover-foreground: 180 100% 90%;
+  --color-primary: 180 100% 50%;
+  --color-primary-foreground: 240 10% 3.9%;
+  --color-secondary: 280 100% 70%;
+  --color-secondary-foreground: 240 10% 3.9%;
+  --color-muted: 240 10% 12%;
+  --color-muted-foreground: 180 20% 65%;
+  --color-accent: 320 100% 60%;
+  --color-accent-foreground: 240 10% 3.9%;
+  --color-destructive: 0 100% 50%;
+  --color-destructive-foreground: 180 100% 90%;
+  --color-border: 180 50% 20%;
+  --color-input: 180 50% 20%;
+  --color-ring: 180 100% 50%;
+  --color-chart-1: 180 100% 50%;
+  --color-chart-2: 280 100% 70%;
+  --color-chart-3: 320 100% 60%;
+  --color-chart-4: 120 100% 50%;
+  --color-chart-5: 60 100% 50%;
+  
+  /* Legacy variables (without --color- prefix) for custom usage */
   --background: 240 10% 3.9%;
   --foreground: 180 100% 90%;
-  
-  /* Card/Surface Colors */
   --card: 240 10% 6%;
   --card-foreground: 180 100% 90%;
-  
-  /* Popover Colors */
   --popover: 240 10% 6%;
   --popover-foreground: 180 100% 90%;
-  
-  /* Primary Colors - Neon Cyan */
   --primary: 180 100% 50%;
   --primary-foreground: 240 10% 3.9%;
-  
-  /* Secondary Colors - Neon Purple */
   --secondary: 280 100% 70%;
   --secondary-foreground: 240 10% 3.9%;
-  
-  /* Muted Colors */
   --muted: 240 10% 12%;
   --muted-foreground: 180 20% 65%;
-  
-  /* Accent Colors - Neon Pink */
   --accent: 320 100% 60%;
   --accent-foreground: 240 10% 3.9%;
-  
-  /* Destructive Colors - Neon Red */
   --destructive: 0 100% 50%;
   --destructive-foreground: 180 100% 90%;
-  
-  /* Border Colors - Glowing cyan */
   --border: 180 50% 20%;
   --input: 180 50% 20%;
-  
-  /* Ring Colors */
   --ring: 180 100% 50%;
-  
-  /* Chart Colors - Neon Palette */
-  --chart-1: 180 100% 50%; /* Neon Cyan */
-  --chart-2: 280 100% 70%; /* Neon Purple */
-  --chart-3: 320 100% 60%; /* Neon Pink */
-  --chart-4: 120 100% 50%; /* Neon Green */
-  --chart-5: 60 100% 50%; /* Neon Yellow */
-  
-  /* Custom Application Colors */
+  --chart-1: 180 100% 50%;
+  --chart-2: 280 100% 70%;
+  --chart-3: 320 100% 60%;
+  --chart-4: 120 100% 50%;
+  --chart-5: 60 100% 50%;
   --success: 120 100% 50%;
   --success-foreground: 240 10% 3.9%;
-  
   --warning: 60 100% 50%;
   --warning-foreground: 240 10% 3.9%;
-  
   --info: 200 100% 50%;
   --info-foreground: 240 10% 3.9%;
-  
-  /* Sidebar Colors */
   --sidebar-background: 240 10% 5%;
   --sidebar-foreground: 180 100% 90%;
   --sidebar-border: 180 50% 20%;
   --sidebar-hover: 240 10% 12%;
-  
-  /* Top Navigation Colors */
   --nav-background: 240 10% 6%;
   --nav-foreground: 180 100% 90%;
   --nav-border: 180 50% 20%;
-  
-  /* AI Assistant Icon Colors - Animated neon glow */
   --ai-glow-primary: 180 100% 50%;
   --ai-glow-secondary: 280 100% 70%;
-  
-  /* Progress Bar Colors */
   --progress-background: 240 10% 12%;
   --progress-foreground: 180 100% 50%;
-  
-  /* Badge Colors */
   --badge-draft: 60 100% 50%;
   --badge-in-progress: 200 100% 50%;
   --badge-completed: 120 100% 50%;
   --badge-failed: 0 100% 50%;
-  
-  /* Futuristic-specific neon colors */
   --neon-cyan: 180 100% 50%;
   --neon-purple: 280 100% 70%;
   --neon-pink: 320 100% 60%;
@@ -96,37 +89,30 @@
   --neon-red: 0 100% 50%;
   --neon-blue: 200 100% 50%;
   --neon-orange: 30 100% 50%;
-  
-  /* Glow effects */
-  --glow-cyan: 0 0 10px hsl(180 100% 50% / 0.5), 0 0 20px hsl(180 100% 50% / 0.3);
-  --glow-purple: 0 0 10px hsl(280 100% 70% / 0.5), 0 0 20px hsl(280 100% 70% / 0.3);
-  --glow-pink: 0 0 10px hsl(320 100% 60% / 0.5), 0 0 20px hsl(320 100% 60% / 0.3);
-  
-  /* Shadow with glow */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 0 10px hsl(180 100% 50% / 0.1);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 0 15px hsl(180 100% 50% / 0.15);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 0 20px hsl(180 100% 50% / 0.2);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 0 30px hsl(180 100% 50% / 0.25);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 0 40px hsl(180 100% 50% / 0.3);
-  
-  /* Border Radius - Sharper for tech feel */
   --radius: 0.25rem;
 }
 
 /* Futuristic theme specific effects */
+.futuristic *,
 [data-theme='futuristic'] * {
   /* Text shadow for neon effect on headings */
   --text-glow: 0 0 10px currentColor;
 }
 
+.futuristic h1,
+.futuristic h2,
+.futuristic h3,
 [data-theme='futuristic'] h1,
 [data-theme='futuristic'] h2,
 [data-theme='futuristic'] h3 {
   text-shadow: var(--text-glow);
 }
 
-/* Scanline effect overlay */
-[data-theme='futuristic']::before {
+/* Scanline effect disabled to prevent layout issues */
+/* If you want to re-enable it, uncomment below and ensure it doesn't affect scrolling */
+/*
+body.futuristic::after,
+body[data-theme='futuristic']::after {
   content: '';
   position: fixed;
   top: 0;
@@ -142,7 +128,8 @@
   );
   background-size: 100% 4px;
   animation: scanline 8s linear infinite;
-  z-index: 9999;
+  z-index: 50;
+  overflow: hidden;
 }
 
 @keyframes scanline {
@@ -153,3 +140,4 @@
     background-position: 0 100vh;
   }
 }
+*/

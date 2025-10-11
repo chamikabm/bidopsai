@@ -40,13 +40,13 @@ export function WorkflowProgress({
 
     switch (status) {
       case 'COMPLETED':
-        return <CheckCircle2 className={cn(iconClass, 'text-green-500')} />;
+        return <CheckCircle2 className={cn(iconClass, 'text-success')} />;
       case 'IN_PROGRESS':
-        return <Loader2 className={cn(iconClass, 'text-blue-500 animate-spin')} />;
+        return <Loader2 className={cn(iconClass, 'text-info animate-spin')} />;
       case 'WAITING':
-        return <Clock className={cn(iconClass, 'text-yellow-500')} />;
+        return <Clock className={cn(iconClass, 'text-warning')} />;
       case 'FAILED':
-        return <XCircle className={cn(iconClass, 'text-red-500')} />;
+        return <XCircle className={cn(iconClass, 'text-destructive')} />;
       case 'OPEN':
       default:
         return (
@@ -63,13 +63,13 @@ export function WorkflowProgress({
   const getStepColor = (status: AgentTaskStatus) => {
     switch (status) {
       case 'COMPLETED':
-        return 'border-green-500 bg-green-500/10';
+        return 'border-success bg-success/10';
       case 'IN_PROGRESS':
-        return 'border-blue-500 bg-blue-500/10';
+        return 'border-info bg-info/10';
       case 'WAITING':
-        return 'border-yellow-500 bg-yellow-500/10';
+        return 'border-warning bg-warning/10';
       case 'FAILED':
-        return 'border-red-500 bg-red-500/10';
+        return 'border-destructive bg-destructive/10';
       case 'OPEN':
       default:
         return 'border-muted bg-muted/20';
@@ -133,10 +133,10 @@ export function WorkflowProgress({
                     <span
                       className={cn(
                         'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium',
-                        step.status === 'COMPLETED' && 'bg-green-500/10 text-green-700 dark:text-green-400',
-                        step.status === 'IN_PROGRESS' && 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-                        step.status === 'WAITING' && 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
-                        step.status === 'FAILED' && 'bg-red-500/10 text-red-700 dark:text-red-400'
+                        step.status === 'COMPLETED' && 'bg-success/10 text-success-foreground',
+                        step.status === 'IN_PROGRESS' && 'bg-info/10 text-info-foreground',
+                        step.status === 'WAITING' && 'bg-warning/10 text-warning-foreground',
+                        step.status === 'FAILED' && 'bg-destructive/10 text-destructive-foreground'
                       )}
                     >
                       {step.status.replace('_', ' ')}
@@ -154,25 +154,25 @@ export function WorkflowProgress({
         <div className="flex items-center gap-3">
           {workflowStatus === 'COMPLETED' && (
             <>
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <CheckCircle2 className="h-5 w-5 text-success" />
               <span className="font-medium">Workflow Completed</span>
             </>
           )}
           {workflowStatus === 'IN_PROGRESS' && (
             <>
-              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              <Loader2 className="h-5 w-5 animate-spin text-info" />
               <span className="font-medium">Workflow In Progress</span>
             </>
           )}
           {workflowStatus === 'WAITING' && (
             <>
-              <Clock className="h-5 w-5 text-yellow-500" />
+              <Clock className="h-5 w-5 text-warning" />
               <span className="font-medium">Awaiting User Input</span>
             </>
           )}
           {workflowStatus === 'FAILED' && (
             <>
-              <XCircle className="h-5 w-5 text-red-500" />
+              <XCircle className="h-5 w-5 text-destructive" />
               <span className="font-medium">Workflow Failed</span>
             </>
           )}

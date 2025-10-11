@@ -50,27 +50,54 @@
 }
 
 .tiptap-editor .ProseMirror code {
-  @apply bg-muted rounded px-1.5 py-0.5 font-mono text-sm;
+  background-color: hsl(var(--muted));
+  border-radius: 0.25rem;
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .tiptap-editor .ProseMirror pre {
-  @apply bg-muted rounded-md p-4 font-mono text-sm overflow-x-auto;
+  background-color: hsl(var(--muted));
+  border-radius: 0.375rem;
+  padding: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  overflow-x: auto;
 }
 
 .tiptap-editor .ProseMirror pre code {
-  @apply bg-transparent p-0;
+  background-color: transparent;
+  padding: 0;
 }
 
 .tiptap-editor .ProseMirror blockquote {
-  @apply border-l-4 border-primary pl-4 italic;
+  border-left-width: 4px;
+  border-color: hsl(var(--primary));
+  padding-left: 1rem;
+  font-style: italic;
 }
 
 .tiptap-editor .ProseMirror hr {
-  @apply my-6 border-t border-border;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-top-width: 1px;
+  border-color: hsl(var(--border));
 }
 
 .tiptap-editor .ProseMirror a {
-  @apply text-primary underline underline-offset-4 hover:text-primary/80;
+  color: hsl(var(--primary));
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
+
+.tiptap-editor .ProseMirror a:hover {
+  color: hsl(var(--primary) / 0.8);
 }
 
 .tiptap-editor .ProseMirror img {
@@ -82,31 +109,50 @@
 }
 
 .tiptap-editor .ProseMirror th {
-  @apply border border-border p-2 bg-muted font-semibold text-left;
+  border-width: 1px;
+  border-color: hsl(var(--border));
+  padding: 0.5rem;
+  background-color: hsl(var(--muted));
+  font-weight: 600;
+  text-align: left;
 }
 
 .tiptap-editor .ProseMirror td {
-  @apply border border-border p-2;
+  border-width: 1px;
+  border-color: hsl(var(--border));
+  padding: 0.5rem;
 }
 
 .tiptap-editor .ProseMirror mark {
-  @apply bg-yellow-200 dark:bg-yellow-800;
+  background-color: rgb(254 240 138);
+}
+
+.dark .tiptap-editor .ProseMirror mark,
+[data-theme="dark"] .tiptap-editor .ProseMirror mark,
+[data-theme="futuristic"] .tiptap-editor .ProseMirror mark {
+  background-color: rgb(133 77 14);
 }
 
 .tiptap-editor .ProseMirror.is-editor-empty:first-child::before {
-  @apply text-muted-foreground float-left h-0 pointer-events-none;
+  color: hsl(var(--muted-foreground));
+  float: left;
+  height: 0;
+  pointer-events: none;
   content: attr(data-placeholder);
 }
 
 /* Table Selection */
 .tiptap-editor .ProseMirror .selectedCell:after {
-  @apply absolute inset-0 bg-primary/10 pointer-events-none;
+  position: absolute;
+  inset: 0;
+  background-color: hsl(var(--primary) / 0.1);
+  pointer-events: none;
   content: '';
 }
 
 /* Placeholder */
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
-  @apply text-muted-foreground;
+  color: hsl(var(--muted-foreground));
   content: attr(data-placeholder);
   float: left;
   height: 0;

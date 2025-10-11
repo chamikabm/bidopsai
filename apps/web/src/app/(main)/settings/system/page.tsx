@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save } from 'lucide-react';
+import { Save, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,18 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useUIStore, type Theme } from '@/store/useUIStore';
+import { cn } from '@/lib/utils';
+
+// Helper function to apply theme to DOM
+function applyThemeToDOM(theme: Theme) {
+  if (typeof document === 'undefined') return;
+  
+  const root = document.documentElement;
+  root.classList.remove('light', 'dark', 'deloitte', 'futuristic');
+  root.classList.add(theme);
+  root.setAttribute('data-theme', theme);
+}
 
 // System settings schema
 const systemSettingsSchema = z.object({
@@ -28,30 +41,54 @@ type SystemSettings = z.infer<typeof systemSettingsSchema>;
 
 export default function SystemSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
-
-  // Mock system settings
-  const mockSettings: SystemSettings = {
-    twoFactorEnabled: false,
-    twoFactorMethod: 'authenticator',
-    timezone: 'Australia/Melbourne',
-    theme: 'dark',
-    language: 'en-AU',
-    dataRetention: '30',
-  };
+  const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
+  const currentTheme = useUIStore((state) => state.theme);
+  const setTheme = useUIStore((state) => state.setTheme);
 
   const form = useForm<SystemSettings>({
     resolver: zodResolver(systemSettingsSchema),
-    defaultValues: mockSettings,
+    defaultValues: {
+      twoFactorEnabled: false,
+      twoFactorMethod: 'authenticator',
+      timezone: 'Australia/Melbourne',
+      theme: currentTheme,
+      language: 'en-AU',
+      dataRetention: '30',
+    },
   });
+
+  // Apply preview theme for immediate feedback
+  const handleThemePreview = (theme: Theme) => {
+    setPreviewTheme(theme);
+    form.setValue('theme', theme);
+    // Temporarily apply theme for preview
+    applyThemeToDOM(theme);
+  };
+
+  // Reset to original theme on unmount if not saved
+  useEffect(() => {
+    return () => {
+      if (previewTheme && previewTheme !== currentTheme) {
+        applyThemeToDOM(currentTheme);
+      }
+    };
+  }, [previewTheme, currentTheme]);
 
   const handleSave = async (data: SystemSettings) => {
     setIsSaving(true);
     try {
       console.log('Saving system settings:', data);
-      // TODO: Implement save mutation
+      // Persist theme to localStorage via store
+      setTheme(data.theme);
+      setPreviewTheme(null);
+      // TODO: Implement save mutation for other settings
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      // Show success toast
+      toast.success('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
+      toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
     }
@@ -75,10 +112,46 @@ export default function SystemSettingsPage() {
   ];
 
   const themes = [
-    { value: 'light', label: 'Light', description: 'Clean and bright interface' },
-    { value: 'dark', label: 'Dark', description: 'Easy on the eyes' },
-    { value: 'deloitte', label: 'Deloitte', description: 'Deloitte brand colors' },
-    { value: 'futuristic', label: 'Futuristic', description: 'Cyberpunk aesthetics' },
+    {
+      value: 'light',
+      label: 'Light',
+      description: 'Clean and professional light theme',
+      colors: [
+        'hsl(221.2 83.2% 53.3%)', // Primary - Blue
+        'hsl(210 40% 96.1%)', // Secondary - Light Gray
+        'hsl(142.1 76.2% 36.3%)', // Success - Green
+      ],
+    },
+    {
+      value: 'dark',
+      label: 'Dark',
+      description: 'Modern dark theme for low-light',
+      colors: [
+        'hsl(217.2 91.2% 59.8%)', // Primary - Bright Blue
+        'hsl(217.2 32.6% 17.5%)', // Secondary - Dark Gray
+        'hsl(142.1 70.6% 45.3%)', // Success - Green
+      ],
+    },
+    {
+      value: 'deloitte',
+      label: 'Deloitte',
+      description: 'Deloitte brand theme',
+      colors: [
+        'hsl(142 49% 46%)', // Primary - Deloitte Green
+        'hsl(174 49% 46%)', // Accent - Deloitte Teal
+        'hsl(0 0% 20%)', // Secondary - Dark Gray
+      ],
+    },
+    {
+      value: 'futuristic',
+      label: 'Futuristic',
+      description: 'Cyberpunk neon aesthetics',
+      colors: [
+        'hsl(180 100% 50%)', // Primary - Neon Cyan
+        'hsl(280 100% 70%)', // Secondary - Neon Purple
+        'hsl(320 100% 60%)', // Accent - Neon Pink
+      ],
+    },
   ];
 
   const languages = [
@@ -245,28 +318,56 @@ export default function SystemSettingsPage() {
               <Label>Theme *</Label>
               <RadioGroup
                 value={form.watch('theme')}
-                onValueChange={(value: 'light' | 'dark' | 'deloitte' | 'futuristic') =>
-                  form.setValue('theme', value)
-                }
+                onValueChange={(value: 'light' | 'dark' | 'deloitte' | 'futuristic') => {
+                  handleThemePreview(value);
+                }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-4"
               >
-                {themes.map((theme) => (
-                  <div key={theme.value}>
-                    <RadioGroupItem
-                      value={theme.value}
-                      id={theme.value}
-                      className="peer sr-only"
-                    />
-                    <Label
-                      htmlFor={theme.value}
-                      className="flex flex-col items-start space-y-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-semibold">{theme.label}</span>
-                      <span className="text-xs text-muted-foreground">{theme.description}</span>
-                    </Label>
-                  </div>
-                ))}
+                {themes.map((theme) => {
+                  const isActive = form.watch('theme') === theme.value;
+                  return (
+                    <div key={theme.value} className="relative">
+                      <RadioGroupItem
+                        value={theme.value}
+                        id={theme.value}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={theme.value}
+                        className={cn(
+                          "flex flex-col items-start space-y-3 rounded-md border-2 bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all",
+                          isActive
+                            ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background"
+                            : "border-muted"
+                        )}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-semibold">{theme.label}</span>
+                          {isActive && (
+                            <Check className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {theme.description}
+                        </span>
+                        <div className="flex items-center gap-2 w-full mt-1">
+                          {theme.colors.map((color, idx) => (
+                            <div
+                              key={idx}
+                              className="w-6 h-6 rounded-full border-2 border-border shadow-sm"
+                              style={{ backgroundColor: color }}
+                              title={`Color ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </Label>
+                    </div>
+                  );
+                })}
               </RadioGroup>
+              <p className="text-xs text-muted-foreground">
+                Theme preview is shown immediately. Click &quot;Save All Settings&quot; to persist your choice.
+              </p>
             </div>
           </CardContent>
         </Card>
