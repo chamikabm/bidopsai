@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import styles from './AuthForms.module.css';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -160,7 +161,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
       </Button>
 
       {/* Divider */}
-      <div className="auth-divider">
+      <div className={styles.divider}>
         <span>Or continue with</span>
       </div>
 
@@ -168,7 +169,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit, onError)}
-          className="auth-form space-y-4"
+          className={`${styles.form} space-y-4`}
         >
           <FormField
             control={form.control}
@@ -184,7 +185,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
@@ -213,14 +214,14 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
                     disabled={isLoading}
                   />
                 </FormControl>
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
 
           <Button
             type="submit"
-            className="auth-submit w-full"
+            className={`${styles.submit} w-full`}
             disabled={isLoading}
           >
             {signInMutation.isPending && (

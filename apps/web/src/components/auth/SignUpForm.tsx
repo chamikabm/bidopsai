@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import styles from './AuthForms.module.css';
 
 /**
  * Form validation schema
@@ -205,7 +206,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
         <Form {...confirmationForm}>
           <form
             onSubmit={confirmationForm.handleSubmit(onConfirmSubmit)}
-            className="auth-form space-y-4"
+            className={`${styles.form} space-y-4`}
           >
             <FormField
               control={confirmationForm.control}
@@ -226,14 +227,14 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                   <FormDescription>
                     Enter the 6-digit code from your email
                   </FormDescription>
-                  <FormMessage className="auth-error" />
+                  <FormMessage className={styles.error} />
                 </FormItem>
               )}
             />
 
             <Button
               type="submit"
-              className="auth-submit w-full"
+              className={`${styles.submit} w-full`}
               disabled={confirmSignUpMutation.isPending}
             >
               {confirmSignUpMutation.isPending && (
@@ -290,7 +291,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
       <Form {...signUpForm}>
         <form
           onSubmit={signUpForm.handleSubmit(onSignUpSubmit)}
-          className="auth-form space-y-4"
+          className={`${styles.form} space-y-4`}
         >
           {/* Username */}
           <FormField
@@ -310,7 +311,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                 <FormDescription>
                   Letters, numbers, and ._- characters only
                 </FormDescription>
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
@@ -331,7 +332,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     disabled={signUpMutation.isPending}
                   />
                 </FormControl>
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
@@ -352,7 +353,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                       disabled={signUpMutation.isPending}
                     />
                   </FormControl>
-                  <FormMessage className="auth-error" />
+                  <FormMessage className={styles.error} />
                 </FormItem>
               )}
             />
@@ -371,7 +372,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                       disabled={signUpMutation.isPending}
                     />
                   </FormControl>
-                  <FormMessage className="auth-error" />
+                  <FormMessage className={styles.error} />
                 </FormItem>
               )}
             />
@@ -394,7 +395,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                   />
                 </FormControl>
                 <PasswordStrengthIndicator password={field.value} />
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
@@ -415,14 +416,14 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
                     disabled={signUpMutation.isPending}
                   />
                 </FormControl>
-                <FormMessage className="auth-error" />
+                <FormMessage className={styles.error} />
               </FormItem>
             )}
           />
 
           <Button
             type="submit"
-            className="auth-submit w-full"
+            className={`${styles.submit} w-full`}
             disabled={signUpMutation.isPending}
           >
             {signUpMutation.isPending && (
