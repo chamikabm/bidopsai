@@ -1,0 +1,463 @@
+/**
+ * Custom Animations
+ * 
+ * Reusable CSS animations for the application
+ * Includes breathing, glowing, and pulsing effects for the AI assistant icon
+ */
+
+/* ============================================
+   AI Assistant Icon Animations
+   ============================================ */
+
+/* Breathing animation - subtle expansion and contraction */
+@keyframes breathing {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.animate-breathing {
+  animation: breathing 3s ease-in-out infinite;
+}
+
+/* Glowing animation - pulsing glow effect */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px hsl(var(--ai-glow-primary) / 0.5),
+      0 0 10px hsl(var(--ai-glow-primary) / 0.3),
+      0 0 15px hsl(var(--ai-glow-primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px hsl(var(--ai-glow-primary) / 0.8),
+      0 0 20px hsl(var(--ai-glow-primary) / 0.6),
+      0 0 30px hsl(var(--ai-glow-primary) / 0.4);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Dual-color glowing animation - alternates between two colors */
+@keyframes glow-dual {
+  0%,
+  100% {
+    box-shadow: 0 0 5px hsl(var(--ai-glow-primary) / 0.5),
+      0 0 10px hsl(var(--ai-glow-primary) / 0.3),
+      0 0 15px hsl(var(--ai-glow-primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 5px hsl(var(--ai-glow-secondary) / 0.5),
+      0 0 10px hsl(var(--ai-glow-secondary) / 0.3),
+      0 0 15px hsl(var(--ai-glow-secondary) / 0.2);
+  }
+}
+
+.animate-glow-dual {
+  animation: glow-dual 4s ease-in-out infinite;
+}
+
+/* Combined breathing and glowing */
+@keyframes breathing-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 5px hsl(var(--ai-glow-primary) / 0.5),
+      0 0 10px hsl(var(--ai-glow-primary) / 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.95;
+    box-shadow: 0 0 10px hsl(var(--ai-glow-primary) / 0.8),
+      0 0 20px hsl(var(--ai-glow-primary) / 0.6),
+      0 0 30px hsl(var(--ai-glow-primary) / 0.4);
+  }
+}
+
+.animate-breathing-glow {
+  animation: breathing-glow 3s ease-in-out infinite;
+}
+
+/* ============================================
+   Progress and Loading Animations
+   ============================================ */
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Spin animation for loading spinners */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Progress bar shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ============================================
+   Fade and Slide Animations
+   ============================================ */
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in;
+}
+
+/* Fade out animation */
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out;
+}
+
+/* Slide in from top */
+@keyframes slide-in-top {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out;
+}
+
+/* Slide in from right */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Slide in from bottom */
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.3s ease-out;
+}
+
+/* Slide in from left */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+/* ============================================
+   Bounce and Wiggle Animations
+   ============================================ */
+
+/* Bounce animation */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Wiggle animation for notifications */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+/* ============================================
+   Scale Animations
+   ============================================ */
+
+/* Scale in animation */
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+/* Scale out animation */
+@keyframes scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-scale-out {
+  animation: scale-out 0.2s ease-in;
+}
+
+/* ============================================
+   Futuristic Theme Specific Animations
+   ============================================ */
+
+/* Neon flicker effect */
+@keyframes neon-flicker {
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  54%,
+  56%,
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor,
+      0 0 30px currentColor;
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.4;
+    text-shadow: none;
+  }
+}
+
+.animate-neon-flicker {
+  animation: neon-flicker 5s linear infinite;
+}
+
+/* Hologram scan effect */
+@keyframes hologram-scan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+.animate-hologram-scan {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: hologram-scan 2s linear infinite;
+}
+
+/* ============================================
+   Background and Particle Animations
+   ============================================ */
+
+/* Float animation for background particles */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  50% {
+    transform: translateY(-40px) translateX(-10px);
+  }
+  75% {
+    transform: translateY(-20px) translateX(5px);
+  }
+}
+
+.animate-float {
+  animation: float linear infinite;
+}
+
+/* Gradient background animation */
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 15s ease infinite;
+}
+
+/* ============================================
+   Theme-Specific Breathing Animations
+   ============================================ */
+
+/* Blue breathing for light theme */
+@keyframes breathing-blue {
+  0%,
+  100% {
+    background-color: hsl(221 83% 53% / 0.3);
+  }
+  50% {
+    background-color: hsl(221 83% 53% / 0.6);
+  }
+}
+
+.animate-breathing-blue {
+  animation: breathing-blue 3s ease-in-out infinite;
+}
+
+/* Purple breathing for dark theme */
+@keyframes breathing-purple {
+  0%,
+  100% {
+    background-color: hsl(263 70% 50% / 0.3);
+  }
+  50% {
+    background-color: hsl(263 70% 50% / 0.6);
+  }
+}
+
+.animate-breathing-purple {
+  animation: breathing-purple 3s ease-in-out infinite;
+}
+
+/* Green breathing for deloitte theme */
+@keyframes breathing-green {
+  0%,
+  100% {
+    background-color: hsl(86 61% 44% / 0.3);
+  }
+  50% {
+    background-color: hsl(86 61% 44% / 0.6);
+  }
+}
+
+.animate-breathing-green {
+  animation: breathing-green 3s ease-in-out infinite;
+}
+
+/* Cyan breathing for futuristic theme */
+@keyframes breathing-cyan {
+  0%,
+  100% {
+    background-color: hsl(180 100% 50% / 0.3);
+  }
+  50% {
+    background-color: hsl(180 100% 50% / 0.6);
+  }
+}
+
+.animate-breathing-cyan {
+  animation: breathing-cyan 3s ease-in-out infinite;
+}

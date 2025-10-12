@@ -1,0 +1,85 @@
+/**
+ * Dark Theme Variables
+ *
+ * Modern dark theme optimized for low-light conditions
+ * Reduces eye strain during nighttime or extended use
+ */
+
+.dark,
+[data-theme='dark'] {
+  color-scheme: dark;
+  
+  /* Tailwind CSS 4.x variables (with --color- prefix) */
+  --color-background: 222.2 84% 4.9%;
+  --color-foreground: 210 40% 98%;
+  --color-card: 217.2 32.6% 17.5%;
+  --color-card-foreground: 210 40% 98%;
+  --color-popover: 217.2 32.6% 17.5%;
+  --color-popover-foreground: 210 40% 98%;
+  --color-primary: 217.2 91.2% 59.8%;
+  --color-primary-foreground: 222.2 47.4% 11.2%;
+  --color-secondary: 217.2 32.6% 17.5%;
+  --color-secondary-foreground: 210 40% 98%;
+  --color-muted: 217.2 32.6% 17.5%;
+  --color-muted-foreground: 215 20.2% 65.1%;
+  --color-accent: 217.2 32.6% 17.5%;
+  --color-accent-foreground: 210 40% 98%;
+  --color-destructive: 0 84.2% 60.2%;
+  --color-destructive-foreground: 210 40% 98%;
+  --color-border: 217.2 32.6% 17.5%;
+  --color-input: 217.2 32.6% 17.5%;
+  --color-ring: 224.3 76.3% 48%;
+  --color-chart-1: 217.2 91.2% 59.8%;
+  --color-chart-2: 142.1 70.6% 45.3%;
+  --color-chart-3: 47.9 95.8% 53.1%;
+  --color-chart-4: 280.4 89% 60%;
+  --color-chart-5: 340.1 84.2% 47.8%;
+  
+  /* Legacy variables (without --color- prefix) for custom usage */
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 217.2 32.6% 17.5%;
+  --card-foreground: 210 40% 98%;
+  --popover: 217.2 32.6% 17.5%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --chart-1: 217.2 91.2% 59.8%;
+  --chart-2: 142.1 70.6% 45.3%;
+  --chart-3: 47.9 95.8% 53.1%;
+  --chart-4: 280.4 89% 60%;
+  --chart-5: 340.1 84.2% 47.8%;
+  --success: 142.1 70.6% 45.3%;
+  --success-foreground: 210 40% 98%;
+  --warning: 47.9 95.8% 53.1%;
+  --warning-foreground: 222.2 84% 4.9%;
+  --info: 217.2 91.2% 59.8%;
+  --info-foreground: 222.2 47.4% 11.2%;
+  --sidebar-background: 222.2 84% 3.9%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-hover: 217.2 32.6% 17.5%;
+  --nav-background: 222.2 84% 4.9%;
+  --nav-foreground: 210 40% 98%;
+  --nav-border: 217.2 32.6% 17.5%;
+  --ai-glow-primary: 217.2 91.2% 59.8%;
+  --ai-glow-secondary: 142.1 70.6% 45.3%;
+  --progress-background: 217.2 32.6% 17.5%;
+  --progress-foreground: 217.2 91.2% 59.8%;
+  --badge-draft: 47.9 95.8% 53.1%;
+  --badge-in-progress: 217.2 91.2% 59.8%;
+  --badge-completed: 142.1 70.6% 45.3%;
+  --badge-failed: 0 62.8% 30.6%;
+  --radius: 0.5rem;
+}

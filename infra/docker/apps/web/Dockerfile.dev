@@ -1,0 +1,42 @@
+# Development Dockerfile for BidOps.AI Frontend
+# Includes hot reload and development tools
+
+FROM node:24-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY apps/web/package*.json ./
+COPY apps/web/pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
+
+# Development image with hot reload
+FROM base AS dev
+
+WORKDIR /app
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application source
+COPY apps/web/ ./
+
+# Expose port
+EXPOSE 3000
+
+# Set environment to development
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Enable hot reload
+ENV WATCHPACK_POLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+
+# Start Next.js development server
+CMD ["npm", "run", "dev"]

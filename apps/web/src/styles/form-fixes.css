@@ -1,0 +1,99 @@
+/**
+ * Form Component Fixes for All Themes
+ * 
+ * These styles ensure proper visibility and styling of form elements,
+ * popovers, calendars, and dropdowns across all themes.
+ */
+
+/* Calendar Popup Background - uses theme-aware popover color */
+[data-radix-popover-content] {
+  background-color: hsl(var(--popover)) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 16px 40px -12px hsl(var(--background) / 0.65);
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  z-index: 100;
+}
+
+[data-radix-popover-content]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: hsl(var(--popover));
+  opacity: 1;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Calendar Component - uses theme-aware popover color */
+.rdp,
+[data-radix-popover-content] .rdp,
+[data-radix-popover-content] .rdp-root {
+  background-color: hsl(217.2 32.6% 17.5%) !important;
+  color: hsl(210 40% 98%) !important;
+  border: 1px solid hsl(217.2 32.6% 17.5%);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.rdp * {
+  background-color: transparent !important;
+}
+
+.rdp-months {
+  background-color: hsl(217.2 32.6% 17.5%) !important;
+}
+
+.rdp-month {
+  background-color: hsl(217.2 32.6% 17.5%) !important;
+}
+
+.rdp-caption,
+.rdp-head,
+.rdp-tbody {
+  background-color: hsl(217.2 32.6% 17.5%) !important;
+}
+
+.rdp-day {
+  color: hsl(210 40% 98%) !important;
+}
+
+.rdp-day:hover:not([aria-disabled="true"]) {
+  background-color: hsl(217.2 32.6% 25%) !important;
+}
+
+.rdp-day_selected {
+  background-color: hsl(217.2 91.2% 59.8%) !important;
+  color: hsl(222.2 47.4% 11.2%) !important;
+}
+
+/* Command Component (Dropdown) - uses theme-aware popover color */
+[cmdk-root] {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
+
+[cmdk-list] {
+  background-color: hsl(var(--popover));
+}
+
+[cmdk-group] {
+  background-color: hsl(var(--popover));
+}
+
+[cmdk-input-wrapper] {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+}
+
+/* Ensure all dialog popovers have proper background */
+[role="dialog"][data-radix-popover-content] {
+  background-color: hsl(var(--popover));
+  z-index: 100;
+}
+
+/* Form validation error messages - uses theme-aware destructive color */
+[id*="form-item-message"] {
+  color: hsl(var(--destructive));
+  font-weight: 500;
+}
