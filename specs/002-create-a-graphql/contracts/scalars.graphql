@@ -1,0 +1,26 @@
+# Custom Scalar Types for BidOps.AI GraphQL API
+
+"""
+UUID scalar type representing a universally unique identifier
+"""
+scalar UUID
+
+"""
+DateTime scalar type representing a date and time in ISO 8601 format
+"""
+scalar DateTime
+
+"""
+Date scalar type representing a date without time
+"""
+scalar Date
+
+"""
+JSON scalar type for arbitrary JSON data
+"""
+scalar JSON
+
+"""
+Decimal scalar type for precise numeric values (e.g., monetary amounts)
+"""
+scalar Decimal
