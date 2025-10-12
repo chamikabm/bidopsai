@@ -1,0 +1,221 @@
+# BidOps.AI Monorepo .gitignore
+
+# ============================================
+# GLOBAL PATTERNS FOR ALL SERVICES
+# ============================================
+
+# Dependencies
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Build outputs
+**/dist/
+**/build/
+**/.next/
+**/out/
+**/*.tsbuildinfo
+
+# Environment files (keep .env.example files)
+**/.env
+**/.env.*
+!**/.env.example
+**/.env.local
+**/.env.*.local
+
+# Testing
+**/coverage/
+**/.nyc_output/
+**/*.lcov
+**/.jest-cache/
+
+# Logs
+**/logs/
+**/*.log
+**/pids/
+**/*.pid
+**/*.seed
+**/*.pid.lock
+
+# ============================================
+# CORE-API SERVICE SPECIFIC
+# ============================================
+
+# Prisma
+services/core-api/prisma/.env
+services/core-api/prisma/dev.db
+services/core-api/prisma/dev.db-journal
+services/core-api/prisma/migrations/**/migration.sql.bak
+
+# Redis dump
+services/core-api/dump.rdb
+
+# GraphQL generated files
+services/core-api/generated/
+services/core-api/__generated__/
+
+# ============================================
+# WEB FRONTEND SPECIFIC
+# ============================================
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel
+
+# TypeScript
+apps/web/next-env.d.ts
+
+# ============================================
+# CDK INFRASTRUCTURE
+# ============================================
+
+# CDK outputs
+infra/cdk/cdk.out/
+infra/cdk/cdk.context.json
+infra/cdk/.cdk.staging/
+
+# CloudFormation templates
+infra/cloud-formation/*.template.json
+infra/cloud-formation/*.template.yaml
+
+# ============================================
+# AGENT-CORE SERVICE
+# ============================================
+
+agents-core/**/__pycache__/
+agents-core/**/*.pyc
+agents-core/**/*.pyo
+agents-core/**/*.pyd
+agents-core/.Python
+agents-core/**/venv/
+agents-core/**/env/
+agents-core/**/.venv/
+
+# ============================================
+# IDE AND EDITORS
+# ============================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# ============================================
+# OS FILES
+# ============================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================
+# DOCKER
+# ============================================
+
+# Docker Compose overrides (keep .dev and .prod)
+docker-compose.override.yml
+
+# ============================================
+# TEMPORARY AND BACKUP FILES
+# ============================================
+
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.swp
+*.swo
+
+# ============================================
+# SECURITY AND CREDENTIALS
+# ============================================
+
+# AWS credentials
+**/.aws/credentials
+**/.aws/config
+
+# SSH keys
+**/*.pem
+**/*.key
+!**/*.pub
+
+# Certificates
+**/*.crt
+**/*.cer
+**/*.p12
+**/*.pfx
+
+# ============================================
+# MISCELLANEOUS
+# ============================================
+
+# Cache directories
+**/.cache/
+**/.npm/
+**/.eslintcache
+**/.parcel-cache/
+
+# Optional REPL history
+**/.node_repl_history
+
+# Package archives
+**/*.tgz
+**/*.zip
+**/*.tar.gz
+
+# Debug files
+.vscode-test/
+npm-debug.log*
+yarn-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Sentry
+.sentryclirc

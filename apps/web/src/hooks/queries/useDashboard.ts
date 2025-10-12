@@ -3,7 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlRequest } from '@/lib/graphql/client';
 import { GET_DASHBOARD_STATS, GET_MY_PROJECTS } from '@/lib/graphql/queries/projects';
 
 /**
@@ -35,7 +35,7 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
-      const data = await graphqlClient.request<DashboardStatsResponse>(
+      const data = await graphqlRequest<DashboardStatsResponse>(
         GET_DASHBOARD_STATS
       );
       return data.dashboardStats;
@@ -109,7 +109,7 @@ export function useUserProjects(options?: {
   return useQuery({
     queryKey: ['dashboard', 'projects', { first, after }],
     queryFn: async () => {
-      const data = await graphqlClient.request<ProjectsResponse>(
+      const data = await graphqlRequest<ProjectsResponse>(
         GET_MY_PROJECTS,
         { first, after }
       );

@@ -1,6 +1,6 @@
 'use client';
 
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlRequest } from '@/lib/graphql/client';
 import { GET_PROJECT } from '@/lib/graphql/queries/projects';
 import type { Project } from '@/types/project.types';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ export function useProject(id: string | undefined) {
     queryKey: ['project', id],
     queryFn: async () => {
       if (!id) throw new Error('Project ID is required');
-      const data = await graphqlClient.request<ProjectResponse>(GET_PROJECT, { id });
+      const data = await graphqlRequest<ProjectResponse>(GET_PROJECT, { id });
       return data.project;
     },
     enabled: !!id,

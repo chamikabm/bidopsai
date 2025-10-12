@@ -1,0 +1,47 @@
+# Development Dockerfile for BidOps.AI Core API
+# Includes hot reload with tsx + nodemon for fast development iteration
+
+FROM node:24-alpine AS base
+
+# Install dependencies for development
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY services/core-api/package*.json ./
+
+# Install ALL dependencies (including devDependencies for development)
+RUN npm ci
+
+# Copy Prisma schema to generate client
+COPY services/core-api/prisma ./prisma
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Development image with hot reload
+FROM base AS dev
+
+WORKDIR /app
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application source (will be overridden by volume mount in docker-compose)
+COPY services/core-api/ ./
+
+# Expose GraphQL API port
+EXPOSE 4000
+
+# Set environment to development
+ENV NODE_ENV=development
+
+# Enable hot reload with tsx + nodemon
+# Generate Prisma client and then start the dev server
+# This ensures Prisma client is regenerated after volume mounts
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
