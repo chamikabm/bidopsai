@@ -207,7 +207,7 @@ export default function NewProjectPage() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 bg-popover" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -216,6 +216,7 @@ export default function NewProjectPage() {
                             date < new Date() || date < new Date('1900-01-01')
                           }
                           initialFocus
+                          className="bg-popover"
                         />
                       </PopoverContent>
                     </Popover>

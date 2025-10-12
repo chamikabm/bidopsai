@@ -43,6 +43,7 @@
 /* Import other styles */
 @import '../styles/editor.css';
 @import '../styles/animations.css';
+@import '../styles/form-fixes.css';
 
 /* Base styles */
 * {
