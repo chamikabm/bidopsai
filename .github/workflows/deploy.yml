@@ -32,7 +32,7 @@ jobs:
         cdk synth
 
     - name: Run contract tests
-      run: PYTHONPATH=. pytest tests/contract/ -v
+      run: PYTHONPATH=. pytest infra/tests/contract/ -v
 
     - name: Run deployment tests
       run: |
