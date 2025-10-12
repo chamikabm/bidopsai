@@ -15,6 +15,12 @@ COPY services/core-api/package*.json ./
 # Install ALL dependencies (including devDependencies for development)
 RUN npm ci
 
+# Copy Prisma schema to generate client
+COPY services/core-api/prisma ./prisma
+
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Development image with hot reload
 FROM base AS dev
 
@@ -36,5 +42,6 @@ EXPOSE 4000
 ENV NODE_ENV=development
 
 # Enable hot reload with tsx + nodemon
-# nodemon.json config will watch .ts and .graphql files
-CMD ["npm", "run", "dev"]
+# Generate Prisma client and then start the dev server
+# This ensures Prisma client is regenerated after volume mounts
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
