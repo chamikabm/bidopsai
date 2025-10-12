@@ -83,8 +83,9 @@ async function calculateBidStatistics(
     },
   });
 
-  const totalValue = totalValueResult._sum.value || 0;
-  const wonValue = wonValueResult._sum.value || 0;
+  // Convert Decimal to number
+  const totalValue = totalValueResult._sum.value ? Number(totalValueResult._sum.value) : 0;
+  const wonValue = wonValueResult._sum.value ? Number(wonValueResult._sum.value) : 0;
   const successRate = submittedBids > 0 ? (wonBids / submittedBids) * 100 : 0;
 
   // Get breakdown by status
@@ -155,6 +156,19 @@ async function calculateBidStatistics(
 }
 
 export const statisticsResolvers = {
+  // Field resolvers for Decimal type conversion
+  BidStatistics: {
+    totalValue: (parent: any) => {
+      return parent.totalValue ? Number(parent.totalValue) : 0;
+    },
+    wonValue: (parent: any) => {
+      return parent.wonValue ? Number(parent.wonValue) : 0;
+    },
+    successRate: (parent: any) => {
+      return parent.successRate ? Number(parent.successRate) : 0;
+    },
+  },
+
   Query: {
     /**
      * Get dashboard statistics for current period
@@ -191,7 +205,13 @@ export const statisticsResolvers = {
       today.setHours(0, 0, 0, 0);
 
       if (existingStats && new Date(existingStats.calculatedAt) >= today) {
-        return existingStats;
+        // Convert Decimal fields to numbers before returning
+        return {
+          ...existingStats,
+          totalValue: Number(existingStats.totalValue),
+          wonValue: Number(existingStats.wonValue),
+          successRate: Number(existingStats.successRate),
+        };
       }
 
       // Create new statistics record
@@ -212,7 +232,13 @@ export const statisticsResolvers = {
 
       logger.info('Dashboard stats calculated', { statsId: newStats.id });
 
-      return newStats;
+      // Convert Decimal fields to numbers before returning
+      return {
+        ...newStats,
+        totalValue: Number(newStats.totalValue),
+        wonValue: Number(newStats.wonValue),
+        successRate: Number(newStats.successRate),
+      };
     },
 
     /**
@@ -263,7 +289,13 @@ export const statisticsResolvers = {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
       if (existingStats && new Date(existingStats.calculatedAt) >= oneHourAgo) {
-        return existingStats;
+        // Convert Decimal fields to numbers before returning
+        return {
+          ...existingStats,
+          totalValue: Number(existingStats.totalValue),
+          wonValue: Number(existingStats.wonValue),
+          successRate: Number(existingStats.successRate),
+        };
       }
 
       // Create or update statistics record
@@ -297,7 +329,13 @@ export const statisticsResolvers = {
 
       logger.info('Bid statistics calculated', { statsId: newStats.id });
 
-      return newStats;
+      // Convert Decimal fields to numbers before returning
+      return {
+        ...newStats,
+        totalValue: Number(newStats.totalValue),
+        wonValue: Number(newStats.wonValue),
+        successRate: Number(newStats.successRate),
+      };
     },
   },
 };

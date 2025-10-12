@@ -1,6 +1,6 @@
 'use client';
 
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlRequest } from '@/lib/graphql/client';
 import {
   GET_WORKFLOW_EXECUTION,
   GET_WORKFLOW_EXECUTIONS_BY_PROJECT,
@@ -21,7 +21,7 @@ export function useWorkflowExecution(id: string | undefined) {
     queryKey: ['workflowExecution', id],
     queryFn: async () => {
       if (!id) throw new Error('Workflow execution ID is required');
-      const data = await graphqlClient.request<WorkflowExecutionResponse>(
+      const data = await graphqlRequest<WorkflowExecutionResponse>(
         GET_WORKFLOW_EXECUTION,
         { id }
       );
@@ -38,7 +38,7 @@ export function useWorkflowExecutionsByProject(projectId: string | undefined) {
     queryKey: ['workflowExecutions', projectId],
     queryFn: async () => {
       if (!projectId) throw new Error('Project ID is required');
-      const data = await graphqlClient.request<WorkflowExecutionsByProjectResponse>(
+      const data = await graphqlRequest<WorkflowExecutionsByProjectResponse>(
         GET_WORKFLOW_EXECUTIONS_BY_PROJECT,
         { projectId }
       );

@@ -1,11 +1,11 @@
 /**
  * useCreateProject Hook
- * 
+ *
  * Mutation hook for creating a new project
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlMutation } from '@/lib/graphql/client';
 import { CREATE_PROJECT } from '@/lib/graphql/mutations/projects';
 import { Project } from '@/types/project.types';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (input: CreateProjectInput) => {
-      const response = await graphqlClient.request<CreateProjectResponse>(
+      const response = await graphqlMutation<CreateProjectResponse>(
         CREATE_PROJECT,
         { input }
       );

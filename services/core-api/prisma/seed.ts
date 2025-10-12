@@ -22,7 +22,7 @@ const COGNITO_TEST_USERS = [
     username: 'admin',
     firstName: 'Admin',
     lastName: 'User',
-    cognitoUserId: 'cognito-admin-user-id', // Will be updated with actual Cognito ID
+    cognitoUserId: '592e1418-d091-70f0-8666-02fd202c2231', // Actual Cognito ID from AWS
     roles: ['ADMIN', 'PROJECT_MANAGER', 'ANALYST'],
   },
   {
@@ -30,7 +30,7 @@ const COGNITO_TEST_USERS = [
     username: 'viewer',
     firstName: 'Viewer',
     lastName: 'User',
-    cognitoUserId: 'cognito-viewer-user-id', // Will be updated with actual Cognito ID
+    cognitoUserId: 'cognito-viewer-user-id', // TODO: Update with actual Cognito ID after creating user
     roles: ['VIEWER'],
   },
   {
@@ -38,7 +38,7 @@ const COGNITO_TEST_USERS = [
     username: 'manager',
     firstName: 'Manager',
     lastName: 'User',
-    cognitoUserId: 'cognito-manager-user-id', // Will be updated with actual Cognito ID
+    cognitoUserId: 'cognito-manager-user-id', // TODO: Update with actual Cognito ID after creating user
     roles: ['PROJECT_MANAGER'],
   },
 ];
@@ -72,6 +72,7 @@ const ROLES_WITH_PERMISSIONS = [
       { resource: 'WORKFLOW', action: 'STOP' },
       { resource: 'AGENT_CONFIG', action: 'UPDATE' },
       { resource: 'INTEGRATION', action: 'CONFIGURE' },
+      { resource: 'DASHBOARD', action: 'READ' },
     ],
   },
   {
@@ -90,6 +91,7 @@ const ROLES_WITH_PERMISSIONS = [
       { resource: 'ARTIFACT', action: 'APPROVE' },
       { resource: 'WORKFLOW', action: 'START' },
       { resource: 'USER', action: 'READ' },
+      { resource: 'DASHBOARD', action: 'READ' },
     ],
   },
   {
@@ -101,6 +103,7 @@ const ROLES_WITH_PERMISSIONS = [
       { resource: 'ARTIFACT', action: 'CREATE' },
       { resource: 'ARTIFACT', action: 'READ' },
       { resource: 'ARTIFACT', action: 'UPDATE' },
+      { resource: 'DASHBOARD', action: 'READ' },
     ],
   },
   {
@@ -110,6 +113,7 @@ const ROLES_WITH_PERMISSIONS = [
       { resource: 'PROJECT', action: 'READ' },
       { resource: 'ARTIFACT', action: 'READ' },
       { resource: 'KNOWLEDGE_BASE', action: 'READ' },
+      { resource: 'DASHBOARD', action: 'READ' },
     ],
   },
 ];
@@ -393,45 +397,81 @@ async function seed() {
     const adminUser = createdUsers['admin@bidopsai.com'];
     
     for (const kbData of GLOBAL_KNOWLEDGE_BASES) {
-      await prisma.knowledgeBase.create({
-        data: {
-          ...kbData,
-          createdBy: adminUser.id,
+      // Check if knowledge base already exists
+      const existingKB = await prisma.knowledgeBase.findFirst({
+        where: {
+          name: kbData.name,
+          scope: kbData.scope,
         },
       });
-      console.log(`  ✓ Created knowledge base: ${kbData.name}`);
+
+      if (!existingKB) {
+        await prisma.knowledgeBase.create({
+          data: {
+            ...kbData,
+            createdBy: adminUser.id,
+          },
+        });
+        console.log(`  ✓ Created knowledge base: ${kbData.name}`);
+      } else {
+        console.log(`  ✓ Knowledge base already exists: ${kbData.name}`);
+      }
     }
 
     // 5. Create Sample Project (Optional - for testing)
     console.log('\n📋 Creating sample project...');
-    const sampleProject = await prisma.project.create({
-      data: {
-        name: 'Sample RFP - Government Digital Transformation',
-        description: 'Sample project for testing the BidOps.AI workflow with a government digital transformation RFP',
-        status: 'OPEN',
-        value: 500000,
-        deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        progressPercentage: 0,
-        createdBy: adminUser.id,
-        metadata: {
-          client: 'Sample Government Agency',
-          domain: 'Digital Transformation',
-          priority: 'HIGH',
-        },
-      },
+    const sampleProjectName = 'Sample RFP - Government Digital Transformation';
+    
+    // Check if sample project already exists
+    let sampleProject = await prisma.project.findFirst({
+      where: { name: sampleProjectName },
     });
-    console.log(`  ✓ Created sample project: ${sampleProject.name}`);
+
+    if (!sampleProject) {
+      sampleProject = await prisma.project.create({
+        data: {
+          name: sampleProjectName,
+          description: 'Sample project for testing the BidOps.AI workflow with a government digital transformation RFP',
+          status: 'OPEN',
+          value: 500000,
+          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+          progressPercentage: 0,
+          createdBy: adminUser.id,
+          metadata: {
+            client: 'Sample Government Agency',
+            domain: 'Digital Transformation',
+            priority: 'HIGH',
+          },
+        },
+      });
+      console.log(`  ✓ Created sample project: ${sampleProject.name}`);
+    } else {
+      console.log(`  ✓ Sample project already exists: ${sampleProject.name}`);
+    }
 
     // 6. Add project members
     const managerUser = createdUsers['manager@bidopsai.com'];
-    await prisma.projectMember.create({
-      data: {
+    
+    // Check if project member already exists
+    const existingMember = await prisma.projectMember.findFirst({
+      where: {
         projectId: sampleProject.id,
         userId: managerUser.id,
-        addedById: adminUser.id,
       },
     });
-    console.log(`  ✓ Added project member: ${managerUser.email}`);
+
+    if (!existingMember) {
+      await prisma.projectMember.create({
+        data: {
+          projectId: sampleProject.id,
+          userId: managerUser.id,
+          addedById: adminUser.id,
+        },
+      });
+      console.log(`  ✓ Added project member: ${managerUser.email}`);
+    } else {
+      console.log(`  ✓ Project member already exists: ${managerUser.email}`);
+    }
 
     // 7. Create Integration records (placeholders)
     console.log('\n🔌 Creating integration records...');

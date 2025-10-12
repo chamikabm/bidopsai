@@ -38,10 +38,10 @@ export const knowledgeBaseResolvers = {
         where: { id },
         include: {
           project: true,
-          createdBy: true,
+          creator: true,
           documents: {
             include: {
-              uploadedBy: true,
+              uploader: true,
             },
             orderBy: { uploadedAt: 'desc' },
           },
@@ -100,7 +100,7 @@ export const knowledgeBaseResolvers = {
         orderBy: { createdAt: 'desc' },
         include: {
           project: true,
-          createdBy: true,
+          creator: true,
         },
       });
 
@@ -136,7 +136,7 @@ export const knowledgeBaseResolvers = {
       return prisma.knowledgeBase.findMany({
         where: { scope: 'GLOBAL' },
         include: {
-          createdBy: true,
+          creator: true,
         },
         orderBy: { name: 'asc' },
       });
@@ -177,12 +177,12 @@ export const knowledgeBaseResolvers = {
           scope: input.scope,
           projectId: input.projectId,
           documentCount: 0,
-          createdById: user!.id,
+          createdBy: user!.id,
           // TODO: Phase 6 - Create Bedrock vector store and set vectorStoreId
         },
         include: {
           project: true,
-          createdBy: true,
+          creator: true,
         },
       });
 
@@ -285,10 +285,10 @@ export const knowledgeBaseResolvers = {
             fileSize: input.fileSize,
             s3Bucket: input.s3Bucket,
             s3Key: input.s3Key,
-            uploadedById: user!.id,
+            uploadedBy: user!.id,
           },
           include: {
-            uploadedBy: true,
+            uploader: true,
           },
         });
 
@@ -362,8 +362,8 @@ export const knowledgeBaseResolvers = {
     },
 
     createdBy: async (parent: any, _: any, context: GraphQLContext) => {
-      if (parent.createdBy) return parent.createdBy;
-      return context.prisma.user.findUnique({ where: { id: parent.createdById } });
+      if (parent.creator) return parent.creator;
+      return context.prisma.user.findUnique({ where: { id: parent.createdBy } });
     },
 
     documents: async (parent: any, _: any, context: GraphQLContext) => {
@@ -384,8 +384,8 @@ export const knowledgeBaseResolvers = {
 
   KnowledgeBaseDocument: {
     uploadedBy: async (parent: any, _: any, context: GraphQLContext) => {
-      if (parent.uploadedBy) return parent.uploadedBy;
-      return context.prisma.user.findUnique({ where: { id: parent.uploadedById } });
+      if (parent.uploader) return parent.uploader;
+      return context.prisma.user.findUnique({ where: { id: parent.uploadedBy } });
     },
   },
 };

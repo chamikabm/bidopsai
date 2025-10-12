@@ -70,8 +70,8 @@ export const projectResolvers = {
       const project = await prisma.project.findUnique({
         where: { id },
         include: {
-          createdBy: true,
-          completedBy: true,
+          creator: true,
+          completer: true,
           documents: {
             include: {
               uploadedBy: true,
@@ -81,7 +81,6 @@ export const projectResolvers = {
           members: {
             include: {
               user: true,
-              addedBy: true,
             },
           },
           knowledgeBases: {
@@ -108,7 +107,7 @@ export const projectResolvers = {
       }
 
       // Check access: project owner, member, or admin
-      const isOwner = project.createdById === context.user!.id;
+      const isOwner = project.createdBy === context.user!.id;
       const isMember = project.members.some((m: any) => m.userId === context.user!.id);
       const isAdmin = hasRole(context, 'ADMIN');
 
@@ -147,7 +146,7 @@ export const projectResolvers = {
       }
 
       if (filter?.createdBy) {
-        where.createdById = filter.createdBy;
+        where.createdBy = filter.createdBy;
       }
 
       if (filter?.dateFrom || filter?.dateTo) {
@@ -170,7 +169,7 @@ export const projectResolvers = {
         skip: cursor ? 1 : 0,
         orderBy: { createdAt: 'desc' },
         include: {
-          createdBy: true,
+          creator: true,
           members: {
             include: {
               user: true,
@@ -224,7 +223,7 @@ export const projectResolvers = {
       const projects = await prisma.project.findMany({
         where: {
           OR: [
-            { createdById: user!.id },
+            { createdBy: user!.id },
             {
               members: {
                 some: {
@@ -251,7 +250,7 @@ export const projectResolvers = {
       const totalCount = await prisma.project.count({
         where: {
           OR: [
-            { createdById: user!.id },
+            { createdBy: user!.id },
             {
               members: {
                 some: {
@@ -307,7 +306,7 @@ export const projectResolvers = {
               value: input.value,
               status: 'DRAFT',
               progressPercentage: 0,
-              createdById: user!.id,
+              createdBy: user!.id,
             },
           });
 
@@ -345,7 +344,7 @@ export const projectResolvers = {
         return prisma.project.findUnique({
           where: { id: project.id },
           include: {
-            createdBy: true,
+            creator: true,
             members: {
               include: {
                 user: true,
@@ -379,7 +378,7 @@ export const projectResolvers = {
       }
 
       // Check ownership or admin
-      requireOwnership(context, project.createdById);
+      requireOwnership(context, project.createdBy);
 
       const updatedProject = await prisma.project.update({
         where: { id },
@@ -414,7 +413,7 @@ export const projectResolvers = {
       }
 
       // Check ownership or admin
-      requireOwnership(context, project.createdById);
+      requireOwnership(context, project.createdBy);
 
       // Delete project (cascade will handle related records)
       await prisma.project.delete({
@@ -446,7 +445,7 @@ export const projectResolvers = {
       }
 
       // Check ownership or admin
-      requireOwnership(context, project.createdById);
+      requireOwnership(context, project.createdBy);
 
       // Check if user exists
       const user = await prisma.user.findUnique({
@@ -475,7 +474,6 @@ export const projectResolvers = {
         include: {
           project: true,
           user: true,
-          addedBy: true,
         },
       });
 
@@ -504,10 +502,10 @@ export const projectResolvers = {
       }
 
       // Check ownership or admin
-      requireOwnership(context, project.createdById);
+      requireOwnership(context, project.createdBy);
 
       // Cannot remove project creator
-      if (userId === project.createdById) {
+      if (userId === project.createdBy) {
         throw new ValidationError('Cannot remove project creator', {
           userId: 'Project creator cannot be removed',
         });
@@ -564,7 +562,7 @@ export const projectResolvers = {
         },
       });
 
-      if (!isMember && project.createdById !== context.user!.id && !hasRole(context, 'ADMIN')) {
+      if (!isMember && project.createdBy !== context.user!.id && !hasRole(context, 'ADMIN')) {
         throw new AuthorizationError('You do not have access to this project');
       }
 
@@ -614,7 +612,7 @@ export const projectResolvers = {
           fileType: input.fileType,
           fileSize: input.fileSize,
           rawFileLocation: input.rawFileLocation,
-          uploadedById: context.user!.id,
+          uploadedBy: context.user!.id,
         },
         include: {
           uploadedBy: true,
@@ -683,7 +681,7 @@ export const projectResolvers = {
       }
 
       // Check ownership
-      requireOwnership(context, document.project.createdById);
+      requireOwnership(context, document.project.createdBy);
 
       // TODO: Phase 6 - Delete from S3
       // await deleteFromS3(document.rawFileLocation);
@@ -711,24 +709,29 @@ export const projectResolvers = {
 
   // Field resolvers
   Project: {
+    value: (parent: any) => {
+      // Convert Prisma Decimal to number for GraphQL
+      return parent.value ? Number(parent.value) : null;
+    },
+
     createdBy: async (parent: any, _: any, context: GraphQLContext) => {
-      if (parent.createdBy) {
-        return parent.createdBy;
+      if (parent.creator) {
+        return parent.creator;
       }
       return context.prisma.user.findUnique({
-        where: { id: parent.createdById },
+        where: { id: parent.createdBy },
       });
     },
 
     completedBy: async (parent: any, _: any, context: GraphQLContext) => {
-      if (!parent.completedById) {
+      if (!parent.completedBy) {
         return null;
       }
-      if (parent.completedBy) {
-        return parent.completedBy;
+      if (parent.completer) {
+        return parent.completer;
       }
       return context.prisma.user.findUnique({
-        where: { id: parent.completedById },
+        where: { id: parent.completedBy },
       });
     },
 
@@ -739,7 +742,7 @@ export const projectResolvers = {
       return context.prisma.projectDocument.findMany({
         where: { projectId: parent.id },
         include: {
-          uploadedBy: true,
+          uploader: true,
         },
         orderBy: { uploadedAt: 'desc' },
       });
@@ -753,7 +756,6 @@ export const projectResolvers = {
         where: { projectId: parent.id },
         include: {
           user: true,
-          addedBy: true,
         },
       });
     },

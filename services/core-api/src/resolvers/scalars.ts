@@ -101,19 +101,23 @@ const DateScalar = new GraphQLScalarType({
     if (typeof value !== 'string') {
       throw new GraphQLError('Date must be a string');
     }
-    if (!isValidDate(value)) {
+    // Accept both YYYY-MM-DD and ISO 8601 datetime formats
+    const dateOnly = value.split('T')[0];
+    if (!isValidDate(dateOnly)) {
       throw new GraphQLError(`Invalid Date format: ${value}`);
     }
-    return value;
+    return dateOnly;
   },
   parseLiteral(ast): string {
     if (ast.kind !== Kind.STRING) {
       throw new GraphQLError('Date must be a string');
     }
-    if (!isValidDate(ast.value)) {
+    // Accept both YYYY-MM-DD and ISO 8601 datetime formats
+    const dateOnly = ast.value.split('T')[0];
+    if (!isValidDate(dateOnly)) {
       throw new GraphQLError(`Invalid Date format: ${ast.value}`);
     }
-    return ast.value;
+    return dateOnly;
   },
 });
 

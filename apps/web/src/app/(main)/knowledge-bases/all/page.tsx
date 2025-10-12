@@ -2,68 +2,23 @@
 
 import { Button } from '@/components/ui/button';
 import { KnowledgeBaseList } from '@/components/knowledge-bases/KnowledgeBaseList/KnowledgeBaseList';
-import { Plus } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { KnowledgeBase, KnowledgeBaseScope } from '@/types/knowledgeBase.types';
+import { useKnowledgeBases } from '@/hooks/queries/useKnowledgeBases';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * All Knowledge Bases Page
- * 
+ *
  * Displays all knowledge bases (both global and local) in a two-section layout.
  * Users can view knowledge bases and create new ones.
- * 
- * TODO: Replace mock data with actual GraphQL query using useKnowledgeBases hook
  */
 export default function AllKnowledgeBasesPage() {
   const router = useRouter();
 
-  // Mock data - will be replaced with actual GraphQL query
-  const mockKnowledgeBases: KnowledgeBase[] = [
-    {
-      id: '1',
-      name: 'Company Policies',
-      description: 'Internal company policies and procedures',
-      scope: KnowledgeBaseScope.GLOBAL,
-      documentCount: 45,
-      createdBy: {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-      },
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-20T15:30:00Z',
-    },
-    {
-      id: '2',
-      name: 'Technical Standards',
-      description: 'Technical documentation and coding standards',
-      scope: KnowledgeBaseScope.GLOBAL,
-      documentCount: 78,
-      createdBy: {
-        id: '2',
-        firstName: 'Jane',
-        lastName: 'Smith',
-      },
-      createdAt: '2024-01-10T09:00:00Z',
-      updatedAt: '2024-01-25T11:00:00Z',
-    },
-    {
-      id: '3',
-      name: 'Project Alpha Documents',
-      description: 'Documentation specific to Project Alpha',
-      scope: KnowledgeBaseScope.LOCAL,
-      projectId: 'proj-1',
-      projectName: 'Project Alpha',
-      documentCount: 12,
-      createdBy: {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-      },
-      createdAt: '2024-02-01T14:00:00Z',
-      updatedAt: '2024-02-05T16:00:00Z',
-    },
-  ];
+  // Fetch knowledge bases from GraphQL API
+  const { data: knowledgeBases = [], isLoading, error } = useKnowledgeBases();
 
   return (
     <div className="space-y-6">
@@ -81,8 +36,30 @@ export default function AllKnowledgeBasesPage() {
         </Button>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load knowledge bases. Please try again later.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-40 w-full" />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Knowledge Base List */}
-      <KnowledgeBaseList knowledgeBases={mockKnowledgeBases} />
+      {!isLoading && !error && <KnowledgeBaseList knowledgeBases={knowledgeBases} />}
     </div>
   );
 }
