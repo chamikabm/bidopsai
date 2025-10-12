@@ -16,7 +16,7 @@ log_deployment() {
 }
 
 # Change to CDK directory
-cd cdk
+cd infra/cdk
 
 # Install dependencies if not already installed
 pip install -r requirements.txt

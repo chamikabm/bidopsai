@@ -20,7 +20,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd cdk
+        cd infra/cdk
         pip install -r requirements.txt
 
     - name: Install AWS CDK
@@ -28,7 +28,7 @@ jobs:
 
     - name: Run CDK synth
       run: |
-        cd cdk
+        cd infra/cdk
         cdk synth
 
     - name: Run contract tests
@@ -62,7 +62,7 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        cd cdk
+        cd infra/cdk
         pip install -r requirements.txt
 
     - name: Configure AWS credentials
@@ -73,4 +73,4 @@ jobs:
         aws-region: us-east-1
 
     - name: Deploy infrastructure
-      run: ./scripts/deploy.sh
+      run: infra/scripts/deploy.sh
