@@ -207,7 +207,7 @@ export default function NewProjectPage() {
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                      <PopoverContent className="w-auto p-3 bg-popover" align="start">
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -217,6 +217,9 @@ export default function NewProjectPage() {
                           }
                           initialFocus
                           className="bg-popover"
+                          captionLayout="dropdown"
+                          fromYear={new Date().getFullYear()}
+                          toYear={new Date().getFullYear() + 10}
                         />
                       </PopoverContent>
                     </Popover>
