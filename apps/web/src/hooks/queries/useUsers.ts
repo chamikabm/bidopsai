@@ -1,11 +1,11 @@
 /**
  * useUsers Hook
- * 
+ *
  * Query hook for fetching users
  */
 
 import { useQuery } from '@tanstack/react-query';
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlRequest } from '@/lib/graphql/client';
 import { GET_USERS } from '@/lib/graphql/queries/users';
 import { User } from '@/types/user.types';
 
@@ -26,7 +26,7 @@ export function useUsers(searchTerm?: string) {
   return useQuery({
     queryKey: ['users', searchTerm],
     queryFn: async () => {
-      const response = await graphqlClient.request<UsersResponse>(
+      const response = await graphqlRequest<UsersResponse>(
         GET_USERS,
         { filter: searchTerm ? { search: searchTerm } : undefined }
       );
