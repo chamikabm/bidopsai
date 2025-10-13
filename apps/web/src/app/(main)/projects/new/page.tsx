@@ -76,7 +76,7 @@ export default function NewProjectPage() {
         description: data.description,
         deadline: data.deadline?.toISOString(),
         knowledgeBaseIds: data.knowledgeBaseIds,
-        userIds: data.userIds,
+        memberUserIds: data.userIds,
       });
 
       toast.success('Project created successfully', { id: 'create-project' });

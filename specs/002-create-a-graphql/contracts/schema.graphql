@@ -1,0 +1,678 @@
+# Complete GraphQL Schema for BidOps.AI Core API
+# Based on frontend contracts from specs/001-create-a-cutting/contracts/
+
+# ====================
+# Custom Scalars
+# ====================
+
+scalar UUID
+scalar DateTime
+scalar Date
+scalar JSON
+scalar Decimal
+
+# ====================
+# Enums
+# ====================
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum WorkflowStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  COMPLETED
+  FAILED
+}
+
+enum AgentType {
+  PARSER
+  ANALYSIS
+  CONTENT
+  KNOWLEDGE
+  COMPLIANCE
+  QA
+  COMMS
+  SUBMISSION
+}
+
+enum ArtifactType {
+  WORDDOC
+  PDF
+  PPT
+  EXCEL
+}
+
+enum ArtifactCategory {
+  DOCUMENT
+  Q_AND_A
+  EXCEL
+}
+
+enum ArtifactStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+enum KnowledgeBaseScope {
+  GLOBAL
+  PROJECT
+}
+
+enum NotificationType {
+  PROJECT_UPDATE
+  WORKFLOW_COMPLETE
+  ARTIFACT_READY
+  SUBMISSION_SENT
+}
+
+enum IntegrationType {
+  SLACK
+  EMAIL
+  S3
+  BEDROCK
+}
+
+# ====================
+# Core Types
+# ====================
+
+type User {
+  id: UUID!
+  email: String!
+  username: String!
+  firstName: String!
+  lastName: String!
+  profileImageUrl: String
+  preferredLanguage: String
+  themePreference: String
+  emailVerified: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastLogin: DateTime
+  cognitoUserId: String!
+  roles: [Role!]!
+  projects: [ProjectMember!]!
+}
+
+type Role {
+  id: UUID!
+  name: String!
+  description: String
+  permissions: [Permission!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Permission {
+  id: UUID!
+  resource: String!
+  action: String!
+  createdAt: DateTime!
+}
+
+type Project {
+  id: UUID!
+  name: String!
+  description: String
+  status: ProjectStatus!
+  value: Decimal
+  deadline: Date
+  progressPercentage: Int!
+  createdBy: User!
+  completedBy: User
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  completedAt: DateTime
+  metadata: JSON
+  documents: [ProjectDocument!]!
+  members: [ProjectMember!]!
+  knowledgeBases: [KnowledgeBase!]!
+  artifacts: [Artifact!]!
+  workflowExecutions: [WorkflowExecution!]!
+}
+
+type ProjectDocument {
+  id: UUID!
+  projectId: UUID!
+  fileName: String!
+  filePath: String!
+  fileType: String!
+  fileSize: Int!
+  rawFileLocation: String!
+  processedFileLocation: String
+  uploadedBy: User!
+  uploadedAt: DateTime!
+  metadata: JSON
+}
+
+type ProjectMember {
+  id: UUID!
+  project: Project!
+  user: User!
+  addedBy: User!
+  joinedAt: DateTime!
+}
+
+type WorkflowExecution {
+  id: UUID!
+  projectId: UUID!
+  status: WorkflowStatus!
+  initiatedBy: User!
+  handledBy: User
+  completedBy: User
+  startedAt: DateTime!
+  completedAt: DateTime
+  lastUpdatedAt: DateTime!
+  workflowConfig: JSON
+  errorLog: JSON
+  errorMessage: String
+  results: JSON
+  agentTasks: [AgentTask!]!
+}
+
+type AgentTask {
+  id: UUID!
+  workflowExecutionId: UUID!
+  initiatedBy: User!
+  handledBy: User
+  completedBy: User
+  agent: AgentType!
+  status: WorkflowStatus!
+  sequenceOrder: Int!
+  inputData: JSON
+  outputData: JSON
+  taskConfig: JSON
+  errorLog: JSON
+  errorMessage: String
+  startedAt: DateTime
+  completedAt: DateTime
+  executionTimeSeconds: Float
+}
+
+type Artifact {
+  id: UUID!
+  projectId: UUID!
+  name: String!
+  type: ArtifactType!
+  category: ArtifactCategory!
+  status: ArtifactStatus!
+  createdBy: User!
+  approvedBy: User
+  createdAt: DateTime!
+  approvedAt: DateTime
+  versions: [ArtifactVersion!]!
+  latestVersion: ArtifactVersion
+}
+
+type ArtifactVersion {
+  id: UUID!
+  artifactId: UUID!
+  versionNumber: Int!
+  content: JSON!
+  location: String
+  createdBy: User!
+  createdAt: DateTime!
+}
+
+type KnowledgeBase {
+  id: UUID!
+  name: String!
+  description: String
+  scope: KnowledgeBaseScope!
+  project: Project
+  documentCount: Int!
+  createdBy: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  vectorStoreId: String
+  documents: [KnowledgeBaseDocument!]!
+  permissions: [KnowledgeBasePermission!]!
+}
+
+type KnowledgeBaseDocument {
+  id: UUID!
+  knowledgeBaseId: UUID!
+  fileName: String!
+  filePath: String!
+  fileType: String!
+  fileSize: Int!
+  s3Bucket: String!
+  s3Key: String!
+  uploadedBy: User!
+  uploadedAt: DateTime!
+  metadata: JSON
+}
+
+type KnowledgeBasePermission {
+  id: UUID!
+  knowledgeBase: KnowledgeBase!
+  user: User
+  role: Role
+  permissionType: String!
+  grantedAt: DateTime!
+}
+
+type Notification {
+  id: UUID!
+  userId: UUID!
+  type: NotificationType!
+  title: String!
+  message: String!
+  read: Boolean!
+  metadata: JSON
+  createdAt: DateTime!
+  readAt: DateTime
+}
+
+type AuditLog {
+  id: UUID!
+  userId: UUID!
+  action: String!
+  resourceType: String!
+  resourceId: UUID!
+  previousState: JSON
+  newState: JSON
+  ipAddress: String
+  userAgent: String
+  createdAt: DateTime!
+}
+
+type AgentConfiguration {
+  id: UUID!
+  agentType: AgentType!
+  modelName: String!
+  temperature: Float!
+  maxTokens: Int!
+  systemPrompt: JSON!
+  additionalParameters: JSON
+  enabled: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  updatedBy: User
+}
+
+type Integration {
+  id: UUID!
+  type: IntegrationType!
+  name: String!
+  configuration: JSON!
+  enabled: Boolean!
+  createdBy: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  logs: [IntegrationLog!]!
+}
+
+type IntegrationLog {
+  id: UUID!
+  action: String!
+  status: String!
+  requestData: JSON
+  responseData: JSON
+  errorMessage: String
+  createdAt: DateTime!
+}
+
+type BidStatistics {
+  id: UUID!
+  periodStart: Date!
+  periodEnd: Date!
+  submittedBids: Int!
+  wonBids: Int!
+  totalValue: Decimal!
+  wonValue: Decimal!
+  successRate: Float!
+  activeRfps: Int!
+  detailedMetrics: JSON
+  calculatedAt: DateTime!
+}
+
+type PresignedUrl {
+  url: String!
+  fileName: String!
+  expiresAt: DateTime!
+}
+
+# ====================
+# Pagination Types
+# ====================
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type UserEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProjectEdge {
+  node: Project!
+  cursor: String!
+}
+
+type ProjectConnection {
+  edges: [ProjectEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type KnowledgeBaseEdge {
+  node: KnowledgeBase!
+  cursor: String!
+}
+
+type KnowledgeBaseConnection {
+  edges: [KnowledgeBaseEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# ====================
+# Input Types
+# ====================
+
+input CreateProjectInput {
+  name: String!
+  description: String
+  deadline: Date
+  knowledgeBaseIds: [UUID!]
+  memberUserIds: [UUID!]
+}
+
+input UpdateProjectInput {
+  name: String
+  description: String
+  status: ProjectStatus
+  value: Decimal
+  deadline: Date
+  progressPercentage: Int
+}
+
+input CreateProjectDocumentInput {
+  projectId: UUID!
+  fileName: String!
+  filePath: String!
+  fileType: String!
+  fileSize: Int!
+  rawFileLocation: String!
+}
+
+input UpdateProjectDocumentInput {
+  processedFileLocation: String
+  metadata: JSON
+}
+
+input PresignedUrlRequest {
+  fileName: String!
+  fileType: String!
+  fileSize: Int!
+}
+
+input CreateKnowledgeBaseInput {
+  name: String!
+  description: String
+  scope: KnowledgeBaseScope!
+  projectId: UUID
+}
+
+input UploadKnowledgeBaseDocumentInput {
+  knowledgeBaseId: UUID!
+  fileName: String!
+  filePath: String!
+  fileType: String!
+  fileSize: Int!
+  s3Bucket: String!
+  s3Key: String!
+}
+
+input CreateUserInput {
+  email: String!
+  username: String!
+  firstName: String!
+  lastName: String!
+  profileImageUrl: String
+  cognitoUserId: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  profileImageUrl: String
+  preferredLanguage: String
+  themePreference: String
+}
+
+input CreateArtifactInput {
+  projectId: UUID!
+  name: String!
+  type: ArtifactType!
+  category: ArtifactCategory!
+  content: JSON!
+}
+
+input UpdateArtifactVersionInput {
+  artifactId: UUID!
+  content: JSON!
+}
+
+input UpdateAgentConfigurationInput {
+  agentType: AgentType!
+  modelName: String
+  temperature: Float
+  maxTokens: Int
+  systemPrompt: JSON
+  additionalParameters: JSON
+  enabled: Boolean
+}
+
+input UpdateIntegrationInput {
+  type: IntegrationType!
+  name: String
+  configuration: JSON
+  enabled: Boolean
+}
+
+input UserFilterInput {
+  emailVerified: Boolean
+  roleNames: [String!]
+}
+
+input ProjectFilterInput {
+  status: ProjectStatus
+  createdBy: UUID
+  startDate: Date
+  endDate: Date
+}
+
+input KnowledgeBaseFilterInput {
+  scope: KnowledgeBaseScope
+  projectId: UUID
+}
+
+# ====================
+# Query Root
+# ====================
+
+type Query {
+  # User queries
+  me: User!
+  user(id: UUID!): User
+  users(
+    first: Int
+    after: String
+    filter: UserFilterInput
+  ): UserConnection!
+
+  # Project queries
+  project(id: UUID!): Project
+  projects(
+    first: Int
+    after: String
+    filter: ProjectFilterInput
+  ): ProjectConnection!
+  myProjects(
+    first: Int
+    after: String
+  ): ProjectConnection!
+
+  # Knowledge base queries
+  knowledgeBase(id: UUID!): KnowledgeBase
+  knowledgeBases(
+    first: Int
+    after: String
+    filter: KnowledgeBaseFilterInput
+  ): KnowledgeBaseConnection!
+  globalKnowledgeBases: [KnowledgeBase!]!
+
+  # Artifact queries
+  artifact(id: UUID!): Artifact
+  artifactsByProject(projectId: UUID!): [Artifact!]!
+  artifactVersion(id: UUID!): ArtifactVersion
+
+  # Workflow queries
+  workflowExecution(id: UUID!): WorkflowExecution
+  workflowExecutionsByProject(projectId: UUID!): [WorkflowExecution!]!
+  agentTask(id: UUID!): AgentTask
+
+  # Configuration queries
+  agentConfigurations: [AgentConfiguration!]!
+  agentConfiguration(agentType: AgentType!): AgentConfiguration
+
+  # Integration queries
+  integrations: [Integration!]!
+  integration(type: IntegrationType!): Integration
+
+  # Notification queries
+  myNotifications(
+    first: Int
+    after: String
+    unreadOnly: Boolean
+  ): [Notification!]!
+  unreadNotificationCount: Int!
+
+  # Statistics queries
+  dashboardStats: BidStatistics
+  bidStatistics(
+    periodStart: DateTime!
+    periodEnd: DateTime!
+  ): BidStatistics
+
+  # Audit queries
+  auditLogs(
+    first: Int
+    after: String
+    userId: UUID
+    resourceType: String
+  ): [AuditLog!]!
+
+  # Role queries
+  roles: [Role!]!
+  role(id: UUID!): Role
+  permissions(roleId: UUID!): [Permission!]!
+}
+
+# ====================
+# Mutation Root
+# ====================
+
+type Mutation {
+  # Project mutations
+  createProject(input: CreateProjectInput!): Project!
+  updateProject(id: UUID!, input: UpdateProjectInput!): Project!
+  deleteProject(id: UUID!): Boolean!
+  addProjectMember(projectId: UUID!, userId: UUID!): ProjectMember!
+  removeProjectMember(projectId: UUID!, userId: UUID!): Boolean!
+
+  # Project document mutations
+  createProjectDocument(input: CreateProjectDocumentInput!): ProjectDocument!
+  updateProjectDocument(
+    id: UUID!
+    input: UpdateProjectDocumentInput!
+  ): ProjectDocument!
+  deleteProjectDocument(id: UUID!): Boolean!
+  generatePresignedUrls(
+    projectId: UUID!
+    files: [PresignedUrlRequest!]!
+  ): [PresignedUrl!]!
+
+  # Knowledge base mutations
+  createKnowledgeBase(input: CreateKnowledgeBaseInput!): KnowledgeBase!
+  updateKnowledgeBase(
+    id: UUID!
+    name: String
+    description: String
+  ): KnowledgeBase!
+  deleteKnowledgeBase(id: UUID!): Boolean!
+  uploadKnowledgeBaseDocument(
+    input: UploadKnowledgeBaseDocumentInput!
+  ): KnowledgeBaseDocument!
+  deleteKnowledgeBaseDocument(id: UUID!): Boolean!
+
+  # User mutations
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: UUID!, input: UpdateUserInput!): User!
+  deleteUser(id: UUID!): Boolean!
+  assignRole(userId: UUID!, roleId: UUID!): Role!
+  removeRole(userId: UUID!, roleId: UUID!): Boolean!
+  updateMyProfile(input: UpdateUserInput!): User!
+
+  # Artifact mutations
+  createArtifact(input: CreateArtifactInput!): Artifact!
+  updateArtifactVersion(input: UpdateArtifactVersionInput!): ArtifactVersion!
+  approveArtifact(id: UUID!): Artifact!
+  rejectArtifact(id: UUID!): Artifact!
+
+  # Agent configuration mutations
+  updateAgentConfiguration(
+    input: UpdateAgentConfigurationInput!
+  ): AgentConfiguration!
+
+  # Integration mutations
+  updateIntegration(input: UpdateIntegrationInput!): Integration!
+  testIntegration(type: IntegrationType!): Boolean!
+
+  # Notification mutations
+  markNotificationAsRead(id: UUID!): Notification!
+  markAllNotificationsAsRead: Boolean!
+  deleteNotification(id: UUID!): Boolean!
+
+  # System mutations
+  updateSystemSettings(settings: JSON!): Boolean!
+}
+
+# ====================
+# Subscription Root
+# ====================
+
+type Subscription {
+  # Project subscriptions
+  projectUpdated(projectId: UUID!): Project!
+
+  # Workflow subscriptions
+  workflowExecutionUpdated(workflowExecutionId: UUID!): WorkflowExecution!
+  agentTaskUpdated(workflowExecutionId: UUID!): AgentTask!
+
+  # Notification subscriptions
+  notificationReceived(userId: UUID!): Notification!
+
+  # Artifact subscriptions
+  artifactCreated(projectId: UUID!): Artifact!
+  artifactUpdated(artifactId: UUID!): Artifact!
+}

@@ -13,12 +13,14 @@ import { GraphQLClient } from 'graphql-request';
 import { fetchAuthSession } from 'aws-amplify/auth';
 
 /**
- * GraphQL endpoint URL from environment variables
+ * GraphQL endpoint URL - derived from API base URL
+ * Single source of truth: NEXT_PUBLIC_API_URL
  */
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const GRAPHQL_ENDPOINT = `${API_URL}/graphql`;
 
-if (!GRAPHQL_ENDPOINT) {
-  console.warn('NEXT_PUBLIC_GRAPHQL_ENDPOINT is not defined');
+if (!API_URL) {
+  console.warn('NEXT_PUBLIC_API_URL is not defined');
 }
 
 /**
@@ -32,13 +34,14 @@ const baseClient = new GraphQLClient(GRAPHQL_ENDPOINT, {
 
 /**
  * Get authentication headers from Cognito session
- * 
+ *
  * @returns Headers object with Authorization bearer token
  */
 async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
     const session = await fetchAuthSession();
-    const token = session.tokens?.idToken?.toString();
+    // Use accessToken for API authorization (not idToken)
+    const token = session.tokens?.accessToken?.toString();
     
     if (token) {
       return {

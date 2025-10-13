@@ -1,11 +1,11 @@
 /**
  * usePresignedUrl Hook
- * 
+ *
  * Mutation hook for generating S3 presigned URLs
  */
 
 import { useMutation } from '@tanstack/react-query';
-import graphqlClient from '@/lib/graphql/client';
+import { graphqlMutation } from '@/lib/graphql/client';
 import { GENERATE_PRESIGNED_URLS } from '@/lib/graphql/mutations/projects';
 import { toast } from 'sonner';
 
@@ -32,7 +32,7 @@ interface PresignedUrlResponse {
 export function usePresignedUrl() {
   return useMutation({
     mutationFn: async (input: PresignedUrlInput) => {
-      const response = await graphqlClient.request<PresignedUrlResponse>(
+      const response = await graphqlMutation<PresignedUrlResponse>(
         GENERATE_PRESIGNED_URLS,
         { projectId: input.projectId, files: input.files }
       );

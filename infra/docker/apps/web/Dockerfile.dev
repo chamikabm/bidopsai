@@ -11,10 +11,9 @@ WORKDIR /app
 
 # Copy package files
 COPY apps/web/package*.json ./
-COPY apps/web/pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
+RUN npm ci
 
 # Development image with hot reload
 FROM base AS dev
