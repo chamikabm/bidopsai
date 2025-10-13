@@ -15,7 +15,7 @@ interface CreateProjectInput {
   description?: string;
   deadline?: string;
   knowledgeBaseIds?: string[];
-  userIds?: string[];
+  memberUserIds?: string[];
 }
 
 interface CreateProjectResponse {

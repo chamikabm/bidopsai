@@ -304,7 +304,7 @@ export const projectResolvers = {
               description: input.description,
               deadline: input.deadline ? new Date(input.deadline) : undefined,
               value: input.value,
-              status: 'DRAFT',
+              status: 'OPEN',
               progressPercentage: 0,
               createdBy: user!.id,
             },
@@ -347,7 +347,16 @@ export const projectResolvers = {
             creator: true,
             members: {
               include: {
-                user: true,
+                user: {
+                  include: {
+                    roles: {
+                      include: {
+                        role: true,
+                      },
+                    },
+                  },
+                },
+                addedBy: true,
               },
             },
           },
@@ -786,6 +795,36 @@ export const projectResolvers = {
         where: { projectId: parent.id },
         orderBy: { startedAt: 'desc' },
         take: 10,
+      });
+    },
+  },
+
+  // ProjectMember field resolvers
+  ProjectMember: {
+    addedBy: async (parent: any, _: any, context: GraphQLContext) => {
+      if (parent.addedBy) {
+        return parent.addedBy;
+      }
+      return context.prisma.user.findUnique({
+        where: { id: parent.addedById },
+      });
+    },
+
+    user: async (parent: any, _: any, context: GraphQLContext) => {
+      if (parent.user) {
+        return parent.user;
+      }
+      return context.prisma.user.findUnique({
+        where: { id: parent.userId },
+      });
+    },
+
+    project: async (parent: any, _: any, context: GraphQLContext) => {
+      if (parent.project) {
+        return parent.project;
+      }
+      return context.prisma.project.findUnique({
+        where: { id: parent.projectId },
       });
     },
   },
