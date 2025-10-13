@@ -23,7 +23,13 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().min(1),
   AWS_COGNITO_USER_POOL_ID: z.string().min(1),
   AWS_COGNITO_CLIENT_ID: z.string().min(1),
-  S3_BUCKET_NAME: z.string().min(1),
+  
+  // S3 Buckets (from CDK S3SourceBucketStack)
+  AWS_S3_PROJECT_DOCUMENTS_BUCKET: z.string().min(1),
+  AWS_S3_ARTIFACTS_BUCKET: z.string().min(1),
+  AWS_S3_REGION: z.string().min(1),
+  
+  // JWT Configuration
   JWT_ISSUER: z.string().url(),
 
   // Logging

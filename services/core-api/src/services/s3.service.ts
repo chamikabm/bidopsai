@@ -41,19 +41,22 @@ export interface FileMetadata {
 
 export class S3Service {
   private s3Client: S3Client;
-  private bucket: string;
+  private projectDocumentsBucket: string;
+  private artifactsBucket: string;
 
   constructor(private logger: Logger) {
     // Initialize S3 client
     this.s3Client = new S3Client({
-      region: env.AWS_REGION,
+      region: env.AWS_S3_REGION,
       credentials: {
         accessKeyId: env.AWS_ACCESS_KEY_ID,
         secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
       },
     });
 
-    this.bucket = env.S3_BUCKET_NAME;
+    // Set bucket names from environment
+    this.projectDocumentsBucket = env.AWS_S3_PROJECT_DOCUMENTS_BUCKET;
+    this.artifactsBucket = env.AWS_S3_ARTIFACTS_BUCKET;
   }
 
   /**
@@ -112,9 +115,9 @@ export class S3Service {
     const timestamp = Date.now();
     const key = `projects/${projectId}/${year}/${month}/${day}/${hour}/${timestamp}_${sanitizedFileName}`;
 
-    // Create presigned URL for PUT
+    // Create presigned URL for PUT (use project documents bucket for uploads)
     const command = new PutObjectCommand({
-      Bucket: this.bucket,
+      Bucket: this.projectDocumentsBucket,
       Key: key,
       ContentType: request.fileType,
     });
@@ -140,31 +143,42 @@ export class S3Service {
 
   /**
    * Generate presigned URL for file download
+   * Automatically determines bucket based on key prefix
    */
   async generatePresignedDownloadUrl(
     key: string,
     expiresIn: number = 3600
   ): Promise<string> {
+    // Determine bucket based on key prefix
+    const bucket = key.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+
     const command = new GetObjectCommand({
-      Bucket: this.bucket,
+      Bucket: bucket,
       Key: key,
     });
 
     const url = await getSignedUrl(this.s3Client, command, { expiresIn });
 
-    this.logger.info('Generated presigned download URL', { key });
+    this.logger.info('Generated presigned download URL', { key, bucket });
 
     return url;
   }
 
   /**
    * Check if file exists in S3
+   * Automatically determines bucket based on key prefix
    */
   async fileExists(key: string): Promise<boolean> {
+    const bucket = key.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+
     try {
       await this.s3Client.send(
         new HeadObjectCommand({
-          Bucket: this.bucket,
+          Bucket: bucket,
           Key: key,
         })
       );
@@ -179,17 +193,22 @@ export class S3Service {
 
   /**
    * Get file metadata
+   * Automatically determines bucket based on key prefix
    */
   async getFileMetadata(key: string): Promise<FileMetadata> {
+    const bucket = key.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+
     const response = await this.s3Client.send(
       new HeadObjectCommand({
-        Bucket: this.bucket,
+        Bucket: bucket,
         Key: key,
       })
     );
 
     return {
-      bucket: this.bucket,
+      bucket,
       key,
       size: response.ContentLength,
       contentType: response.ContentType,
@@ -199,31 +218,50 @@ export class S3Service {
 
   /**
    * Delete file from S3
+   * Automatically determines bucket based on key prefix
    */
   async deleteFile(key: string): Promise<void> {
+    const bucket = key.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+
     await this.s3Client.send(
       new DeleteObjectCommand({
-        Bucket: this.bucket,
+        Bucket: bucket,
         Key: key,
       })
     );
 
-    this.logger.info('File deleted from S3', { key });
+    this.logger.info('File deleted from S3', { key, bucket });
   }
 
   /**
    * Copy file within S3
+   * Automatically determines buckets based on key prefixes
    */
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
+    const sourceBucket = sourceKey.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+    
+    const destinationBucket = destinationKey.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+
     await this.s3Client.send(
       new CopyObjectCommand({
-        Bucket: this.bucket,
-        CopySource: `${this.bucket}/${sourceKey}`,
+        Bucket: destinationBucket,
+        CopySource: `${sourceBucket}/${sourceKey}`,
         Key: destinationKey,
       })
     );
 
-    this.logger.info('File copied in S3', { sourceKey, destinationKey });
+    this.logger.info('File copied in S3', {
+      sourceKey,
+      destinationKey,
+      sourceBucket,
+      destinationBucket,
+    });
   }
 
   /**
@@ -247,9 +285,28 @@ export class S3Service {
 
   /**
    * Get S3 URL for a key (without presigning, for public files)
+   * Automatically determines bucket based on key prefix
    */
   getPublicUrl(key: string): string {
-    return `https://${this.bucket}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+    const bucket = key.startsWith('artifacts/')
+      ? this.artifactsBucket
+      : this.projectDocumentsBucket;
+    
+    return `https://${bucket}.s3.${env.AWS_S3_REGION}.amazonaws.com/${key}`;
+  }
+
+  /**
+   * Get bucket name for artifacts (used by agent-core for artifact storage)
+   */
+  getArtifactsBucket(): string {
+    return this.artifactsBucket;
+  }
+
+  /**
+   * Get bucket name for project documents (used for user uploads)
+   */
+  getProjectDocumentsBucket(): string {
+    return this.projectDocumentsBucket;
   }
 
   /**

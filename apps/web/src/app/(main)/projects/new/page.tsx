@@ -90,6 +90,7 @@ export default function NewProjectPage() {
           files: data.documents.map((file) => ({
             fileName: file.name,
             fileType: file.type,
+            fileSize: file.size,
           })),
         });
 
