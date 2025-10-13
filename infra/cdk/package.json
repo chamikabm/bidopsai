@@ -9,14 +9,22 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "cdk deploy --all",
-    "deploy:cognito": "cdk deploy BidOpsAICognitoStack",
+    "deploy:cognito": "cdk deploy BidOpsAI-Cognito-dev",
+    "deploy:s3": "cdk deploy BidOpsAI-S3SourceBucket-dev",
+    "deploy:dev": "cdk deploy --all --context environment=dev",
+    "deploy:staging": "cdk deploy --all --context environment=staging",
+    "deploy:prod": "cdk deploy --all --context environment=prod",
     "destroy": "cdk destroy --all",
+    "destroy:cognito": "cdk destroy BidOpsAI-Cognito-dev",
+    "destroy:s3": "cdk destroy BidOpsAI-S3SourceBucket-dev",
     "synth": "cdk synth",
-    "diff": "cdk diff"
+    "diff": "cdk diff",
+    "outputs": "cdk deploy --all --outputs-file outputs.json"
   },
   "keywords": [
     "aws-cdk",
     "cognito",
+    "s3",
     "infrastructure"
   ],
   "author": "BidOps.AI Team",

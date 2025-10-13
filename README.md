@@ -38,43 +38,52 @@ BidOps.AI is an enterprise-grade bid automation platform that leverages AI agent
 
 ### Prerequisites
 
+- **Podman** or **Docker** (for local development)
 - **Node.js** 24+ (LTS)
-- **npm** 10+
-- **Docker** 24+ (optional, for containerized development)
-- **AWS CLI** configured with appropriate credentials
-- **AWS CDK** 2.219+ installed globally
+- **AWS CLI** configured with credentials (for deployment)
+- **AWS CDK** 2.219+ (for infrastructure deployment)
 
-### One-Command Setup
+### Local Development (Docker/Podman)
 
 ```bash
-make quick-start
+# 1. Start the full stack (PostgreSQL + GraphQL API + Frontend)
+cd infra/docker
+podman-compose -f docker-compose.dev.yml up -d
+
+# 2. Wait for services to start (~30 seconds)
+podman logs -f bidopsai-core-api-dev
+
+# 3. Run database migrations (first time only)
+podman exec bidopsai-core-api-dev npm run prisma:migrate
+
+# 4. Seed database with initial data (first time only)
+podman exec bidopsai-core-api-dev npm run prisma:seed
+
+# 5. Access the application
+# Frontend: http://localhost:3000
+# GraphQL API: http://localhost:4000
+# GraphQL Playground: http://localhost:4000/graphql
 ```
 
-This will:
-1. Install all dependencies (frontend + CDK)
-2. Create environment files
-3. Deploy Cognito User Pool to development
-4. Display next steps
+**Default Admin Credentials:**
+- Email: `admin@bidopsai.com`
+- Password: Check seed script output or Cognito console
 
-### Manual Setup
+### Native Development (without Docker)
 
 ```bash
 # 1. Install dependencies
 make install
 
-# 2. Create environment file
+# 2. Setup environment
 make setup-env
 
 # 3. Update apps/web/.env.local with your values
-# (See Environment Variables section below)
 
 # 4. Deploy AWS infrastructure
 make cdk-deploy-dev
 
-# 5. Get CDK outputs and update .env.local
-make cdk-outputs
-
-# 6. Start development server
+# 5. Start development server
 make dev
 ```
 

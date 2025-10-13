@@ -7,14 +7,14 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSignIn } from '@/hooks/useAuth';
-import { signInWithGoogle } from '@/lib/auth/cognito';
+import { signInWithGoogle, getCurrentUser } from '@/lib/auth/cognito';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -52,8 +52,32 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   const redirectTo = searchParams?.get('redirect') || '/dashboard';
   
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
   const signInMutation = useSignIn();
+
+  /**
+   * Check if user is already authenticated on component mount
+   * This follows AWS Amplify best practices
+   */
+  useEffect(() => {
+    async function checkExistingAuth() {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          console.log('✅ User already authenticated, redirecting to:', redirectTo);
+          router.push(redirectTo);
+        }
+      } catch {
+        // User not authenticated, show sign-in form
+        console.log('No existing session, showing sign-in form');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    }
+
+    checkExistingAuth();
+  }, [router, redirectTo]);
 
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -71,6 +95,8 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
   async function onSubmit(values: SignInFormValues) {
     try {
       console.log('🔐 Sign in form submitted:', { username: values.username });
+      console.log('📞 Calling signInMutation.mutate...');
+      
       signInMutation.mutate(values, {
         onSuccess: (result) => {
           console.log('✅ Sign in result:', result);
@@ -86,7 +112,12 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
           }
           // If not signed in, nextStep is handled by useSignIn hook (toast messages)
         },
+        onError: (error) => {
+          console.error('❌ Sign in mutation error:', error);
+        },
       });
+      
+      console.log('📤 Mutation triggered, waiting for response...');
     } catch (error) {
       // Form validation errors are handled by React Hook Form
       console.error('❌ Form submission error:', error);
@@ -115,7 +146,18 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
     }
   }
 
-  const isLoading = signInMutation.isPending || isGoogleLoading;
+  const isLoading = signInMutation.isPending || isGoogleLoading || isCheckingAuth;
+
+  // Show loading state while checking existing authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="w-full space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">
