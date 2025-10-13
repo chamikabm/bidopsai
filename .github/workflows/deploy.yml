@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ "*" ]
 
 jobs:
   test:
@@ -41,6 +41,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    environment: dev
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: test
 
@@ -73,4 +74,9 @@ jobs:
         aws-region: us-east-1
 
     - name: Deploy infrastructure
-      run: infra/scripts/deploy.sh
+      run: |
+        if ! infra/scripts/deploy.sh; then
+          echo "❌ Deployment failed"
+          exit 1
+        fi
+        echo "✅ Deployment successful"

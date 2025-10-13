@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # AWS Region
-AWS_REGION="ap-southeast-2"
+AWS_REGION="us-east-1"
 
 # Track success
 USERS_CREATED=0
