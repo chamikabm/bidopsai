@@ -74,24 +74,20 @@ export const projectResolvers = {
           completer: true,
           documents: {
             include: {
-              uploadedBy: true,
+              uploader: true,
             },
             orderBy: { uploadedAt: 'desc' },
           },
           members: {
             include: {
               user: true,
+              addedBy: true,
             },
           },
-          knowledgeBases: {
-            include: {
-              name: true,
-              scope: true,
-            },
-          },
+          knowledgeBases: true,
           artifacts: {
             include: {
-              createdBy: true,
+              creator: true,
             },
             orderBy: { createdAt: 'desc' },
           },
@@ -296,7 +292,7 @@ export const projectResolvers = {
       }
 
       try {
-        const project = await prisma.$transaction(async (tx: PrismaClient) => {
+        const project = await prisma.$transaction(async (tx) => {
           // Create project
           const newProject = await tx.project.create({
             data: {
@@ -624,7 +620,7 @@ export const projectResolvers = {
           uploadedBy: context.user!.id,
         },
         include: {
-          uploadedBy: true,
+          uploader: true,
         },
       });
 

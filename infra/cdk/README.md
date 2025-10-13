@@ -1,6 +1,8 @@
 # BidOps.AI CDK Infrastructure
 
-AWS CDK infrastructure for BidOps.AI platform. Currently includes Cognito User Pool configuration with future support for additional AWS resources.
+AWS CDK infrastructure for BidOps.AI platform. Includes:
+- **Cognito User Pool**: Authentication and authorization with RBAC
+- **S3 Buckets**: Document storage and artifact management
 
 ## Prerequisites
 
@@ -15,8 +17,9 @@ infra/cdk/
 ├── bin/
 │   └── bidopsai.ts          # CDK app entry point
 ├── lib/
-│   └── cognito-stack.ts     # Cognito User Pool stack
-├── cdk.json                  # CDK configuration
+│   ├── cognito-stack.ts     # Cognito User Pool stack
+│   └── s3-stack.ts          # S3 buckets stack
+├── cdk.json                 # CDK configuration
 ├── tsconfig.json            # TypeScript configuration
 ├── package.json             # Dependencies
 └── README.md                # This file
@@ -32,21 +35,26 @@ npm install
 ## Available Commands
 
 ```bash
-# Synthesize CloudFormation template
+# Synthesize CloudFormation templates
 npm run synth
 
-# Deploy Cognito stack (development)
-npm run deploy:cognito
+# Deploy all stacks (development)
+cdk deploy --all --context environment=dev
 
-# Deploy Cognito stack (specific environment)
-npm run deploy:cognito -- --context environment=staging
-npm run deploy:cognito -- --context environment=prod
+# Deploy specific stacks
+npm run deploy:cognito     # Cognito only
+npm run deploy:s3          # S3 only
+
+# Deploy to specific environments
+cdk deploy --all --context environment=staging
+cdk deploy --all --context environment=prod
 
 # View differences before deployment
 npm run diff
 
-# Destroy stack (development only)
-npm run destroy -- BidOpsAI-Cognito-dev
+# Destroy stacks (development only)
+cdk destroy BidOpsAI-Cognito-dev
+cdk destroy BidOpsAI-S3SourceBucket-dev
 ```
 
 ## Deployment Guide
@@ -73,8 +81,12 @@ npm run destroy -- BidOpsAI-Cognito-dev
 # Synthesize and review changes
 npm run synth
 
-# Deploy
+# Deploy all stacks
+cdk deploy --all --context environment=dev
+
+# Or deploy individually
 npm run deploy:cognito
+npm run deploy:s3
 ```
 
 ### Deploy to Staging/Production
@@ -89,7 +101,9 @@ npm run deploy:cognito -- --context environment=staging
 
 ## Stack Outputs
 
-After deployment, the stack exports the following outputs:
+After deployment, the stacks export the following outputs:
+
+### Cognito Stack Outputs
 
 | Output Name | Description | Example Value |
 |-------------|-------------|---------------|
@@ -98,6 +112,16 @@ After deployment, the stack exports the following outputs:
 | `UserPoolClientId` | User Pool Client ID | `1a2b3c4d5e6f7g8h9i0j` |
 | `UserPoolDomain` | Cognito hosted UI domain | `bidopsai-dev.auth.us-east-1.amazoncognito.com` |
 | `CognitoRegion` | AWS Region | `us-east-1` |
+
+### S3 Stack Outputs
+
+| Output Name | Description | Example Value |
+|-------------|-------------|---------------|
+| `ProjectDocumentsBucketName` | Project documents bucket | `bidopsai-project-documents-dev-123456789012` |
+| `ProjectDocumentsBucketArn` | Project documents bucket ARN | `arn:aws:s3:::bidopsai-project-documents-dev-123456789012` |
+| `ArtifactsBucketName` | Artifacts bucket | `bidopsai-artifacts-dev-123456789012` |
+| `ArtifactsBucketArn` | Artifacts bucket ARN | `arn:aws:s3:::bidopsai-artifacts-dev-123456789012` |
+| `AccessLogsBucketName` | Access logs bucket | `bidopsai-access-logs-dev-123456789012` |
 
 ## Configuration
 
@@ -188,9 +212,9 @@ aws cognito-idp create-identity-provider \
     username=sub
 ```
 
-### 2. Update Frontend Environment Variables
+### 2. Update Environment Variables
 
-Copy the stack outputs to your frontend `.env.local`:
+#### Frontend (.env.local)
 
 ```bash
 # In apps/web/.env.local
@@ -201,6 +225,17 @@ NEXT_PUBLIC_COGNITO_DOMAIN=<UserPoolDomain>
 
 # For server-side auth
 AWS_REGION=us-east-1
+COGNITO_USER_POOL_ID=<UserPoolId>
+COGNITO_CLIENT_ID=<UserPoolClientId>
+```
+
+#### Backend (.env.development)
+
+```bash
+# In services/core-api/.env.development
+AWS_REGION=us-east-1
+AWS_S3_PROJECT_DOCUMENTS_BUCKET=<ProjectDocumentsBucketName>
+AWS_S3_ARTIFACTS_BUCKET=<ArtifactsBucketName>
 COGNITO_USER_POOL_ID=<UserPoolId>
 COGNITO_CLIENT_ID=<UserPoolClientId>
 ```
@@ -302,16 +337,71 @@ cdk destroy BidOpsAI-Cognito-dev
    cdk destroy BidOpsAI-Cognito-prod
    ```
 
+## S3 Stack Details
+
+### Buckets
+
+1. **Project Documents Bucket**
+   - Purpose: Store raw and processed project documents
+   - Path structure: `yyyy/mm/dd/hh/<project_name>_<timestamp>/`
+   - Features: Versioning, lifecycle policies, encryption at rest
+   - CORS: Enabled for direct browser uploads
+
+2. **Artifacts Bucket**
+   - Purpose: Store generated artifacts (Word, PDF, Excel, PPT)
+   - Features: Versioning, lifecycle policies, encryption at rest
+   - Access: Backend API writes, frontend reads via presigned URLs
+
+3. **Access Logs Bucket**
+   - Purpose: Store access logs for compliance and auditing
+   - Retention: 90 days (dev), 365 days (staging/prod)
+   - No public access
+
+### Lifecycle Policies
+
+#### Development
+- Raw documents → Intelligent-Tiering after 30 days
+- Processed documents → Glacier after 90 days
+- Old versions deleted after 30 days
+
+#### Production
+- Raw documents → Intelligent-Tiering after 90 days
+- Processed documents → Glacier after 180 days
+- Old versions deleted after 90 days
+
+### Security Features
+
+- Block all public access by default
+- Server-side encryption with S3-managed keys (SSE-S3)
+- Versioning enabled for data protection
+- HTTPS-only access via bucket policies
+- CORS configured for trusted origins only
+- Access logging enabled for audit trails
+
+### Integration with GraphQL API
+
+The S3 stack integrates with the core-api GraphQL service:
+
+1. **Document Upload Flow**:
+   - Frontend calls `generatePresignedUrls` mutation
+   - API generates signed URLs for direct S3 upload
+   - Frontend uploads files directly to S3
+   - Frontend calls `createProjectDocument` mutation with S3 locations
+
+2. **Artifact Export Flow**:
+   - Supervisor Agent exports artifacts to S3
+   - API updates ArtifactVersion records with S3 locations
+   - Frontend fetches artifacts via presigned URLs
+
 ## Future Stacks
 
 This CDK app will be extended to include:
 
-- **GraphQL API Stack**: AppSync or API Gateway configuration
+- **RDS Stack**: PostgreSQL database with automated backups
+- **ECS Stack**: Container orchestration for core-api service
 - **AgentCore Stack**: Bedrock AgentCore deployment
-- **ECS Stack**: Container orchestration for backend services
-- **Storage Stack**: S3 buckets with lifecycle policies
-- **Database Stack**: RDS PostgreSQL configuration
 - **Monitoring Stack**: CloudWatch dashboards and alarms
+- **VPC Stack**: Network infrastructure for secure communication
 
 ## Support
 

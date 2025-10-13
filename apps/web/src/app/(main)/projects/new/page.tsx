@@ -55,8 +55,16 @@ export default function NewProjectPage() {
   // File upload hook
   const { uploadFiles, isUploading, progress } = useFileUpload({
     onProgress: (fileProgress) => {
-      // Update UI with upload progress if needed
+      // Log progress for debugging
       console.log('Upload progress:', fileProgress);
+      
+      // Show toast for first file starting upload
+      const firstUploadingFile = fileProgress.find(f => f.status === 'uploading' && f.progress === 0);
+      if (firstUploadingFile) {
+        toast.info(`Starting upload: ${firstUploadingFile.fileName}`, {
+          duration: 2000,
+        });
+      }
     },
   });
 
@@ -90,6 +98,7 @@ export default function NewProjectPage() {
           files: data.documents.map((file) => ({
             fileName: file.name,
             fileType: file.type,
+            fileSize: file.size,
           })),
         });
 
@@ -258,28 +267,62 @@ export default function NewProjectPage() {
                 )}
               />
 
-              {/* Upload Progress */}
+              {/* Upload Progress - Enhanced visibility */}
               {isUploading && progress.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium">Uploading files...</p>
-                  {progress.map((fileProgress) => (
-                    <div key={fileProgress.fileName} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="truncate max-w-[200px]">
-                          {fileProgress.fileName}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {fileProgress.progress}%
-                        </span>
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading {progress.length} file{progress.length > 1 ? 's' : ''}...
+                    </p>
+                    <span className="text-xs text-muted-foreground">
+                      {progress.filter(f => f.status === 'completed').length} of {progress.length} complete
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {progress.map((fileProgress) => (
+                      <div key={fileProgress.fileName} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="truncate max-w-[300px] font-medium">
+                            {fileProgress.fileName}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {fileProgress.status === 'completed' && (
+                              <span className="text-green-600 dark:text-green-400 text-xs">✓</span>
+                            )}
+                            {fileProgress.status === 'failed' && (
+                              <span className="text-red-600 dark:text-red-400 text-xs">✗</span>
+                            )}
+                            <span className={cn(
+                              "text-xs font-medium tabular-nums",
+                              fileProgress.status === 'completed' && "text-green-600 dark:text-green-400",
+                              fileProgress.status === 'failed' && "text-red-600 dark:text-red-400",
+                              fileProgress.status === 'uploading' && "text-primary"
+                            )}>
+                              {fileProgress.progress}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2 bg-background rounded-full overflow-hidden border border-border">
+                          <div
+                            className={cn(
+                              "h-full transition-all duration-300",
+                              fileProgress.status === 'completed' && "bg-green-500",
+                              fileProgress.status === 'failed' && "bg-red-500",
+                              fileProgress.status === 'uploading' && "bg-primary"
+                            )}
+                            style={{ width: `${fileProgress.progress}%` }}
+                          />
+                        </div>
+                        {fileProgress.status === 'failed' && fileProgress.error && (
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            {fileProgress.error}
+                          </p>
+                        )}
                       </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all duration-300"
-                          style={{ width: `${fileProgress.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>

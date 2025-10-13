@@ -173,23 +173,50 @@ cdk-diff: ## Show CDK stack differences
 	@echo "$(BLUE)Showing stack differences...$(NC)"
 	cd infra/cdk && npm run diff
 
-cdk-deploy-dev: ## Deploy CDK stack to development
-	@echo "$(BLUE)Deploying to development...$(NC)"
-	cd infra/cdk && cdk deploy --context environment=dev --require-approval never
-	@echo "$(GREEN)✓ Deployed to development$(NC)"
+cdk-deploy-cognito-dev: ## Deploy Cognito stack to development
+	@echo "$(BLUE)Deploying Cognito to development...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-Cognito-dev --context environment=dev --require-approval never
+	@echo "$(GREEN)✓ Cognito deployed to development$(NC)"
 
-cdk-deploy-staging: ## Deploy CDK stack to staging
-	@echo "$(BLUE)Deploying to staging...$(NC)"
-	cd infra/cdk && cdk deploy --context environment=staging --require-approval never
-	@echo "$(GREEN)✓ Deployed to staging$(NC)"
+cdk-deploy-s3-dev: ## Deploy S3 stack to development
+	@echo "$(BLUE)Deploying S3 to development...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-S3SourceBucket-dev --context environment=dev --require-approval never
+	@echo "$(GREEN)✓ S3 deployed to development$(NC)"
 
-cdk-deploy-prod: ## Deploy CDK stack to production
-	@echo "$(YELLOW)⚠ WARNING: Deploying to PRODUCTION$(NC)"
+cdk-deploy-dev: cdk-deploy-cognito-dev cdk-deploy-s3-dev ## Deploy all CDK stacks to development
+	@echo "$(GREEN)✓ All stacks deployed to development$(NC)"
+
+cdk-deploy-cognito-staging: ## Deploy Cognito stack to staging
+	@echo "$(BLUE)Deploying Cognito to staging...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-Cognito-staging --context environment=staging --require-approval never
+	@echo "$(GREEN)✓ Cognito deployed to staging$(NC)"
+
+cdk-deploy-s3-staging: ## Deploy S3 stack to staging
+	@echo "$(BLUE)Deploying S3 to staging...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-S3SourceBucket-staging --context environment=staging --require-approval never
+	@echo "$(GREEN)✓ S3 deployed to staging$(NC)"
+
+cdk-deploy-staging: cdk-deploy-cognito-staging cdk-deploy-s3-staging ## Deploy all CDK stacks to staging
+	@echo "$(GREEN)✓ All stacks deployed to staging$(NC)"
+
+cdk-deploy-cognito-prod: ## Deploy Cognito stack to production
+	@echo "$(YELLOW)⚠ WARNING: Deploying Cognito to PRODUCTION$(NC)"
 	@echo "$(YELLOW)Press Ctrl+C to cancel, or wait 5 seconds to continue...$(NC)"
 	@sleep 5
-	@echo "$(BLUE)Deploying to production...$(NC)"
-	cd infra/cdk && cdk deploy --context environment=prod
-	@echo "$(GREEN)✓ Deployed to production$(NC)"
+	@echo "$(BLUE)Deploying Cognito to production...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-Cognito-prod --context environment=prod
+	@echo "$(GREEN)✓ Cognito deployed to production$(NC)"
+
+cdk-deploy-s3-prod: ## Deploy S3 stack to production
+	@echo "$(YELLOW)⚠ WARNING: Deploying S3 to PRODUCTION$(NC)"
+	@echo "$(YELLOW)Press Ctrl+C to cancel, or wait 5 seconds to continue...$(NC)"
+	@sleep 5
+	@echo "$(BLUE)Deploying S3 to production...$(NC)"
+	cd infra/cdk && cdk deploy BidOpsAI-S3SourceBucket-prod --context environment=prod
+	@echo "$(GREEN)✓ S3 deployed to production$(NC)"
+
+cdk-deploy-prod: cdk-deploy-cognito-prod cdk-deploy-s3-prod ## Deploy all CDK stacks to production
+	@echo "$(GREEN)✓ All stacks deployed to production$(NC)"
 
 cdk-destroy: ## Destroy CDK stack (specify environment with CDK_ENV=dev)
 	@echo "$(RED)⚠ WARNING: This will destroy the $(CDK_ENV) stack$(NC)"
@@ -199,12 +226,22 @@ cdk-destroy: ## Destroy CDK stack (specify environment with CDK_ENV=dev)
 	cd infra/cdk && cdk destroy --context environment=$(CDK_ENV) --force
 	@echo "$(GREEN)✓ Stack destroyed$(NC)"
 
-cdk-outputs: ## Get CDK stack outputs
-	@echo "$(BLUE)Fetching stack outputs...$(NC)"
+cdk-outputs-cognito: ## Get Cognito stack outputs
+	@echo "$(BLUE)Fetching Cognito stack outputs...$(NC)"
 	aws cloudformation describe-stacks \
 		--stack-name BidOpsAI-Cognito-$(CDK_ENV) \
 		--query 'Stacks[0].Outputs' \
 		--output table
+
+cdk-outputs-s3: ## Get S3 stack outputs
+	@echo "$(BLUE)Fetching S3 stack outputs...$(NC)"
+	aws cloudformation describe-stacks \
+		--stack-name BidOpsAI-S3SourceBucket-$(CDK_ENV) \
+		--query 'Stacks[0].Outputs' \
+		--output table
+
+cdk-outputs: cdk-outputs-cognito cdk-outputs-s3 ## Get all CDK stack outputs
+	@echo "$(GREEN)✓ All stack outputs displayed$(NC)"
 
 ##@ Deployment
 
@@ -285,12 +322,12 @@ quick-start: install setup-env cdk-deploy-dev ## Quick setup for new developers
 	@echo "$(GREEN)✓ Quick start completed!$(NC)"
 	@echo ""
 	@echo "$(BLUE)Next steps:$(NC)"
-	@echo "  1. Update apps/web/.env.local with CDK outputs"
-	@echo "  2. Run 'make dev' to start development server"
-	@echo "  3. Visit http://localhost:3000"
+	@echo "  1. Update apps/web/.env.local and services/core-api/.env.development with CDK outputs"
+	@echo "  2. Run 'make dev-docker' to start full stack with Docker"
+	@echo "  3. Visit http://localhost:3000 (frontend) and http://localhost:4000/graphql (API)"
 	@echo ""
 	@echo "$(BLUE)Get CDK outputs:$(NC)"
-	@echo "  make cdk-outputs"
+	@echo "  make cdk-outputs CDK_ENV=dev"
 
 version: ## Show versions of tools
 	@echo "$(BLUE)Tool Versions:$(NC)"
