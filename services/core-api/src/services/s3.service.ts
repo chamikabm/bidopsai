@@ -101,6 +101,7 @@ export class S3Service {
     }
 
     // Generate S3 key with date hierarchy
+    // Format: projects/yyyy/mm/dd/hh/<project_id>/<timestamp>_<filename>
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -113,7 +114,7 @@ export class S3Service {
       .toLowerCase();
     
     const timestamp = Date.now();
-    const key = `projects/${projectId}/${year}/${month}/${day}/${hour}/${timestamp}_${sanitizedFileName}`;
+    const key = `projects/${year}/${month}/${day}/${hour}/${projectId}/${timestamp}_${sanitizedFileName}`;
 
     // Create presigned URL for PUT (use project documents bucket for uploads)
     const command = new PutObjectCommand({
