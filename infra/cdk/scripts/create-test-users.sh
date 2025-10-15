@@ -12,8 +12,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# AWS Region
-AWS_REGION="us-east-1"
+# AWS Region (can be overridden via environment variable)
+AWS_REGION="${AWS_REGION:-us-east-1}"
+
+# Test user credentials (use environment variables or defaults)
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@bidopsai.com}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-AdminPass123!@#}"
+
+VIEWER_EMAIL="${VIEWER_EMAIL:-viewer@bidopsai.com}"
+VIEWER_USERNAME="${VIEWER_USERNAME:-viewer}"
+VIEWER_PASSWORD="${VIEWER_PASSWORD:-ViewerPass123!@#}"
 
 # Track success
 USERS_CREATED=0
@@ -23,7 +32,7 @@ USERS_FAILED=0
 echo -e "${BLUE}Fetching User Pool ID...${NC}"
 USER_POOL_ID=$(aws cloudformation describe-stacks \
   --stack-name BidOpsAI-Cognito-dev \
-  --region $AWS_REGION \
+  --region "$AWS_REGION" \
   --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
   --output text)
 
@@ -44,7 +53,6 @@ create_user() {
   local family_name=$4
   local group=$5
   local password=$6
-  local user_created=false
 
   echo -e "${BLUE}Creating user: $email (username: $username)${NC}"
 
@@ -61,11 +69,9 @@ create_user() {
       Name=family_name,Value="$family_name" \
     --message-action SUPPRESS 2>&1); then
     echo -e "  ${GREEN}✓ User created${NC}"
-    user_created=true
   else
     if echo "$OUTPUT" | grep -q "UsernameExistsException"; then
       echo -e "  ${YELLOW}⚠ User already exists${NC}"
-      user_created=true
     else
       echo -e "  ${RED}✗ Failed to create user${NC}"
       echo -e "  ${RED}Error: $OUTPUT${NC}"
@@ -117,14 +123,14 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 # Admin User
-if create_user "admin" "admin@bidopsai.com" "Admin" "User" "ADMIN" "AdminPass123!@#"; then
+if create_user "$ADMIN_USERNAME" "$ADMIN_EMAIL" "Admin" "User" "ADMIN" "$ADMIN_PASSWORD"; then
   ((USERS_CREATED++))
 else
   ((USERS_FAILED++))
 fi
 
 # KB View User
-if create_user "viewer" "viewer@bidopsai.com" "Knowledge Base" "Viewer" "KB_VIEW" "ViewerPass123!@#"; then
+if create_user "$VIEWER_USERNAME" "$VIEWER_EMAIL" "Knowledge Base" "Viewer" "KB_VIEW" "$VIEWER_PASSWORD"; then
   ((USERS_CREATED++))
 else
   ((USERS_FAILED++))
@@ -137,19 +143,19 @@ if [ $USERS_CREATED -eq 2 ] && [ $USERS_FAILED -eq 0 ]; then
   echo -e "${BLUE}═══════════════════════════════════════${NC}"
   echo ""
   echo -e "${BLUE}Admin User:${NC}"
-  echo -e "  Email:    ${YELLOW}admin@bidopsai.com${NC}"
-  echo -e "  Username: ${YELLOW}admin${NC}"
-  echo -e "  Password: ${YELLOW}AdminPass123!@#${NC}"
+  echo -e "  Email:    ${YELLOW}$ADMIN_EMAIL${NC}"
+  echo -e "  Username: ${YELLOW}$ADMIN_USERNAME${NC}"
+  echo -e "  Password: ${YELLOW}$ADMIN_PASSWORD${NC}"
   echo -e "  Group:    ${YELLOW}ADMIN${NC}"
   echo ""
   echo -e "${BLUE}KB Viewer User:${NC}"
-  echo -e "  Email:    ${YELLOW}viewer@bidopsai.com${NC}"
-  echo -e "  Username: ${YELLOW}viewer${NC}"
-  echo -e "  Password: ${YELLOW}ViewerPass123!@#${NC}"
+  echo -e "  Email:    ${YELLOW}$VIEWER_EMAIL${NC}"
+  echo -e "  Username: ${YELLOW}$VIEWER_USERNAME${NC}"
+  echo -e "  Password: ${YELLOW}$VIEWER_PASSWORD${NC}"
   echo -e "  Group:    ${YELLOW}KB_VIEW${NC}"
   echo ""
   echo -e "${GREEN}Sign in at: http://localhost:3000/signin${NC}"
-  echo -e "${YELLOW}Note: Sign in with email (admin@bidopsai.com) and password${NC}"
+  echo -e "${YELLOW}Note: Sign in with email ($ADMIN_EMAIL) and password${NC}"
   echo ""
   exit 0
 elif [ $USERS_CREATED -gt 0 ]; then
