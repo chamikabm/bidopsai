@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # AWS Region (can be overridden via environment variable)
-AWS_REGION="${AWS_REGION:-ap-southeast-2}"
+AWS_REGION="${AWS_REGION:-us-east-1}"
 
 # Test user credentials (use environment variables or defaults)
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@bidopsai.com}"

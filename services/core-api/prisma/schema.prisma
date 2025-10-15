@@ -31,19 +31,20 @@ model User {
   cognitoUserId     String    @unique @map("cognito_user_id")
 
   // Relations
-  roles                  UserRole[]
-  projectMemberships     ProjectMember[]
-  createdProjects        Project[]             @relation("ProjectCreator")
-  completedProjects      Project[]             @relation("ProjectCompleter")
-  notifications          Notification[]
-  auditLogs              AuditLog[]
-  uploadedDocuments      ProjectDocument[]
-  createdKnowledgeBases  KnowledgeBase[]
-  createdArtifacts       Artifact[]            @relation("ArtifactCreator")
-  approvedArtifacts      Artifact[]            @relation("ArtifactApprover")
-  submissions            SubmissionRecord[]
-  createdIntegrations    Integration[]
-  uploadedKBDocuments    KnowledgeBaseDocument[]
+  roles                   UserRole[]
+  projectMemberships      ProjectMember[]
+  addedProjectMembers     ProjectMember[]        @relation("ProjectMemberAddedBy")
+  createdProjects         Project[]              @relation("ProjectCreator")
+  completedProjects       Project[]              @relation("ProjectCompleter")
+  notifications           Notification[]
+  auditLogs               AuditLog[]
+  uploadedDocuments       ProjectDocument[]
+  createdKnowledgeBases   KnowledgeBase[]
+  createdArtifacts        Artifact[]             @relation("ArtifactCreator")
+  approvedArtifacts       Artifact[]             @relation("ArtifactApprover")
+  submissions             SubmissionRecord[]
+  createdIntegrations     Integration[]
+  uploadedKBDocuments     KnowledgeBaseDocument[]
   createdArtifactVersions ArtifactVersion[]
 
   @@map("users")
@@ -164,6 +165,7 @@ model ProjectMember {
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User    @relation("ProjectMemberAddedBy", fields: [addedById], references: [id], onDelete: Restrict)
 
   @@unique([projectId, userId])
   @@map("project_members")
