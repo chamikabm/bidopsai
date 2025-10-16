@@ -19,7 +19,9 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY_ALIAS: bidopsai/app
+  ECR_REGISTRY_APP: bidopsai/app
+  ECR_REGISTRY_API: bidopsai/api
+  ECR_REGISTRY_AGENT: bidopsai/agent
 
 jobs:
   changes:
@@ -171,7 +173,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REGISTRY_ALIAS }}-${{ matrix.service }}
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REGISTRY_APP}}-${{ matrix.service }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -232,7 +234,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REGISTRY_ALIAS }}-${{ matrix.service }}:${{ github.sha }}'
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REGISTRY_APP }}-${{ matrix.service }}:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-results-${{ matrix.service }}.sarif'
 
