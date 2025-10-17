@@ -61,7 +61,7 @@ class SSEManager:
         session_id: Optional[str] = None
     ) -> None:
         """
-        Persist event to both sse_events_log and conversation_messages tables.
+        Persist event to conversation_messages table for conversation history.
         
         Args:
             event_type: Type of SSE event
@@ -71,21 +71,9 @@ class SSEManager:
             session_id: Optional session reference
         """
         try:
-            # Persist to sse_events_log (original behavior)
-            query = """
-                INSERT INTO sse_events_log (workflow_execution_id, event_type, event_data)
-                VALUES ($1, $2, $3)
-            """
-            await db_pool.execute(
-                query,
-                workflow_execution_id,
-                event_type,
-                json.dumps(event_data)
-            )
-            
-            # Also persist to conversation_messages (Phase 9)
+            # Persist to conversation_messages only
             if project_id and session_id:
-                conv_query = """
+                query = """
                     INSERT INTO conversation_messages (
                         project_id, workflow_execution_id, session_id,
                         role, message_type, content, event_type, metadata
@@ -93,7 +81,7 @@ class SSEManager:
                     VALUES ($1, $2, $3, 'system', 'system_event', $4, $5, $6)
                 """
                 await db_pool.execute(
-                    conv_query,
+                    query,
                     project_id,
                     workflow_execution_id,
                     session_id,
@@ -251,12 +239,14 @@ class SSEManager:
             timestamp = float(last_event_id.split('_')[0])
             cutoff_time = datetime.fromtimestamp(timestamp)
             
-            # Fetch missed events from database
+            # Fetch missed events from conversation_messages table
             query = """
-                SELECT event_type, event_data, sent_at
-                FROM sse_events_log
-                WHERE sent_at > $1
-                ORDER BY sent_at ASC
+                SELECT event_type, content, created_at
+                FROM conversation_messages
+                WHERE created_at > $1
+                    AND role = 'system'
+                    AND message_type = 'system_event'
+                ORDER BY created_at ASC
                 LIMIT 100
             """
             
@@ -269,7 +259,7 @@ class SSEManager:
                     event = SSEEvent(
                         id=self._generate_event_id(),
                         event=row['event_type'],
-                        data=json.loads(row['event_data'])
+                        data=json.loads(row['content'])
                     )
                     await queue.put(event)
                     
@@ -293,10 +283,12 @@ class SSEManager:
             List of event dictionaries
         """
         query = """
-            SELECT id, event_type, event_data, sent_at
-            FROM sse_events_log
+            SELECT id, event_type, content, created_at
+            FROM conversation_messages
             WHERE workflow_execution_id = $1
-            ORDER BY sent_at DESC
+                AND role = 'system'
+                AND message_type = 'system_event'
+            ORDER BY created_at DESC
             LIMIT $2
         """
         
@@ -306,8 +298,8 @@ class SSEManager:
             {
                 "id": str(row['id']),
                 "event_type": row['event_type'],
-                "data": json.loads(row['event_data']),
-                "sent_at": row['sent_at'].isoformat()
+                "data": json.loads(row['content']),
+                "sent_at": row['created_at'].isoformat()
             }
             for row in rows
         ]

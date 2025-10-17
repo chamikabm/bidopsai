@@ -253,7 +253,10 @@ class SSEEventLog(TimestampedModel):
     """
     Persistent log entry for SSE events.
     
-    Corresponds to sse_events_log table for audit trail and replay capability.
+    SSE events are stored in conversation_messages table with:
+    - role='system'
+    - message_type='system_event'
+    - event_type field for the specific event
     """
     
     id: UUID

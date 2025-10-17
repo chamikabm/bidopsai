@@ -12,15 +12,20 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install UV package manager and ensure it's in PATH immediately
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    ln -s /root/.local/bin/uv /usr/local/bin/uv && \
+    ln -s /root/.local/bin/uvx /usr/local/bin/uvx
 
 # Copy project files
-COPY agents-core/pyproject.toml agents-core/uv.lock* ./
+COPY agents-core/pyproject.toml agents-core/uv.lock* agents-core/README.md ./
 
 # Install dependencies with UV
-RUN uv sync --frozen
+RUN uv sync --frozen --no-dev || \
+    uv pip install --system -r pyproject.toml --all-extras
+
+# Install development tools
+RUN uv pip install --system debugpy ipython ipdb
 
 # Copy source code
 COPY agents-core/ ./

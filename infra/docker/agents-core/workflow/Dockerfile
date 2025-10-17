@@ -25,15 +25,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# Install UV package manager and ensure it's in PATH immediately
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    ln -s /root/.local/bin/uv /usr/local/bin/uv && \
+    ln -s /root/.local/bin/uvx /usr/local/bin/uvx
 
 # Copy dependency files
-COPY agents-core/pyproject.toml agents-core/uv.lock* ./
+COPY agents-core/pyproject.toml agents-core/uv.lock* agents-core/README.md ./
 
 # Install production dependencies only
-RUN uv pip install --system -r pyproject.toml --no-dev
+RUN uv sync --frozen --no-dev || \
+    uv pip install --system -r pyproject.toml --no-dev
 
 # Copy application code
 COPY agents-core/ ./

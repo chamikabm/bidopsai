@@ -79,7 +79,8 @@ async def startup_event():
     
     Initializes:
     - Database pool
-    - Memory manager
+    - AgentCore Memory system
+    - Memory manager (conversation persistence)
     - Conversation manager
     - Observability (LangFuse, OTEL)
     - Tool configuration
@@ -95,6 +96,16 @@ async def startup_event():
     try:
         # Initialize core services
         await get_db_pool()
+        
+        # Initialize AgentCore Memory System
+        from agents_core.core.agentcore_memory import initialize_agentcore_memory
+        memory_id = await initialize_agentcore_memory()
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="agentcore_memory_initialized",
+            details={"memory_id": memory_id}
+        )
+        
         get_memory_manager()
         initialize_observability()
         
@@ -105,8 +116,9 @@ async def startup_event():
             agent_name="ai_assistant_executor",
             action="startup_complete",
             details={
-                "services": ["database", "memory", "observability", "tools"],
-                "mode": "ai_assistant"
+                "services": ["database", "agentcore_memory", "memory_manager", "observability", "tools"],
+                "mode": "ai_assistant",
+                "memory_id": memory_id
             }
         )
         

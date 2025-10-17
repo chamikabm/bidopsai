@@ -19,9 +19,8 @@ classifiers = [
 dependencies = [
     # Core framework - AWS AgentCore SDK
     "bedrock-agentcore>=1.0.0",
-    "bedrock-agentcore-starter-toolkit>=1.0.0",
-    "strands-agents>=0.1.0",
-    "strands-tools>=0.1.0",
+    "bedrock-agentcore-starter-toolkit>=0.1.0,<1.0.0",
+    # Note: strands-agents and strands-tools are included in bedrock-agentcore-starter-toolkit
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     # Data validation and LLM structured outputs

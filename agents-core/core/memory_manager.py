@@ -252,8 +252,8 @@ class MemoryManager:
             await db_pool.execute(query, memory_data, UUID(entry.scope))
             
         else:
-            # For user_preference and agent_learning, store in agent_configurations_cache
-            # as a workaround (in production, create dedicated memory table)
+            # For user_preference and agent_learning, store in cache only
+            # In production, consider creating a dedicated memory table
             logger.debug(f"Memory type {entry.memory_type} stored in cache only")
     
     async def _load_memory(self, full_key: str) -> Optional[MemoryEntry]:
