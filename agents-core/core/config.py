@@ -76,6 +76,18 @@ class AppConfig(BaseSettings):
     agentcore_runtime_url_ai_assistant: Optional[str] = Field(default=None, alias="AGENTCORE_RUNTIME_URL_AI_ASSISTANT")
     agentcore_identity_pool_id: Optional[str] = Field(default=None, alias="AGENTCORE_IDENTITY_POOL_ID")
     
+    # AgentCore Memory settings
+    agentcore_memory_enabled: bool = Field(default=True, alias="AGENTCORE_MEMORY_ENABLED")
+    agentcore_memory_name: str = Field(default="BidOpsAI_Memory", alias="AGENTCORE_MEMORY_NAME")
+    agentcore_memory_resource_id: Optional[str] = Field(default=None, alias="AGENTCORE_MEMORY_RESOURCE_ID")
+    agentcore_memory_strategy: str = Field(default="USER_PREFERENCE", alias="AGENTCORE_MEMORY_STRATEGY")
+    agentcore_memory_strategy_name: str = Field(default="AgentPreferences", alias="AGENTCORE_MEMORY_STRATEGY_NAME")
+    agentcore_memory_namespace_pattern: str = Field(default="bidops/{actorId}/preferences", alias="AGENTCORE_MEMORY_NAMESPACE_PATTERN")
+    agentcore_memory_event_expiry_days: int = Field(default=7, alias="AGENTCORE_MEMORY_EVENT_EXPIRY_DAYS")
+    agentcore_memory_hooks_enabled: bool = Field(default=True, alias="AGENTCORE_MEMORY_HOOKS_ENABLED")
+    agentcore_memory_auto_save: bool = Field(default=True, alias="AGENTCORE_MEMORY_AUTO_SAVE")
+    agentcore_memory_batch_size: int = Field(default=10, alias="AGENTCORE_MEMORY_BATCH_SIZE")
+    
     # MCP settings
     mcp_gateway_endpoint: Optional[str] = Field(default=None, alias="MCP_GATEWAY_ENDPOINT")
     mcp_slack_enabled: bool = Field(default=False, alias="MCP_SLACK_ENABLED")
