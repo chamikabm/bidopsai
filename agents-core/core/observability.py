@@ -1,11 +1,13 @@
 """
-Observability setup with LangFuse and AgentCore tracing integration.
+Observability setup with LangFuse, OpenTelemetry, and AgentCore tracing integration.
 
 This module provides:
 - LangFuse trace logging for LLM calls
+- OpenTelemetry (OTEL) metrics to CloudWatch
 - AgentCore runtime observability integration
 - Structured logging with context
 - Performance metrics tracking
+- Custom agent metrics and traces
 """
 
 import logging
@@ -44,6 +46,21 @@ except ImportError:
     
     langfuse_context = MockLangfuseContext()
 
+# Try to import OpenTelemetry (optional)
+try:
+    from opentelemetry import trace, metrics
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    OTEL_AVAILABLE = True
+except ImportError:
+    OTEL_AVAILABLE = False
+    logger.warning("OpenTelemetry not available - metrics/tracing disabled")
+
 
 class TraceMetadata(BaseModel):
     """Metadata for a trace"""
@@ -68,19 +85,29 @@ class PerformanceMetrics(BaseModel):
 
 class ObservabilityManager:
     """
-    Manages observability with LangFuse and AgentCore integration.
+    Manages observability with LangFuse, OpenTelemetry, and AgentCore integration.
     
     Features:
     - LangFuse trace creation and logging
+    - OpenTelemetry metrics to CloudWatch
     - Performance metrics collection
     - Structured logging with context
     - AgentCore runtime integration
+    - Custom agent metrics (workflow duration, agent task duration, error rates)
     """
     
     def __init__(self):
         self._langfuse_client: Optional[Any] = None
+        self._otel_tracer: Optional[Any] = None
+        self._otel_meter: Optional[Any] = None
         self._initialized = False
         self._metrics: list[PerformanceMetrics] = []
+        
+        # OTEL metric instruments
+        self._workflow_duration: Optional[Any] = None
+        self._agent_task_duration: Optional[Any] = None
+        self._agent_error_counter: Optional[Any] = None
+        self._llm_token_counter: Optional[Any] = None
     
     def initialize(self):
         """Initialize observability clients."""
@@ -104,7 +131,88 @@ class ObservabilityManager:
         else:
             logger.info("LangFuse observability disabled")
         
+        # Initialize OpenTelemetry if enabled
+        if config.otel_enabled and OTEL_AVAILABLE:
+            try:
+                self._initialize_otel(config)
+                logger.info("OpenTelemetry observability initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenTelemetry: {e}")
+        else:
+            logger.info("OpenTelemetry observability disabled")
+        
         self._initialized = True
+    
+    def _initialize_otel(self, config):
+        """Initialize OpenTelemetry tracing and metrics."""
+        # Create resource with service information
+        resource = Resource.create({
+            "service.name": "bidopsai-agent-core",
+            "service.version": "1.0.0",
+            "deployment.environment": config.environment
+        })
+        
+        # Initialize Tracer Provider
+        tracer_provider = TracerProvider(resource=resource)
+        
+        if config.otel_endpoint:
+            # Add OTLP exporter for CloudWatch
+            otlp_exporter = OTLPSpanExporter(
+                endpoint=config.otel_endpoint,
+                insecure=config.environment == "development"
+            )
+            tracer_provider.add_span_processor(
+                BatchSpanProcessor(otlp_exporter)
+            )
+        
+        trace.set_tracer_provider(tracer_provider)
+        self._otel_tracer = trace.get_tracer("bidopsai.agent_core")
+        
+        # Initialize Meter Provider
+        metric_reader = None
+        if config.otel_endpoint:
+            metric_exporter = OTLPMetricExporter(
+                endpoint=config.otel_endpoint,
+                insecure=config.environment == "development"
+            )
+            metric_reader = PeriodicExportingMetricReader(
+                metric_exporter,
+                export_interval_millis=30000  # Export every 30 seconds
+            )
+        
+        meter_provider = MeterProvider(
+            resource=resource,
+            metric_readers=[metric_reader] if metric_reader else []
+        )
+        metrics.set_meter_provider(meter_provider)
+        self._otel_meter = metrics.get_meter("bidopsai.agent_core")
+        
+        # Create metric instruments
+        self._workflow_duration = self._otel_meter.create_histogram(
+            name="workflow.duration",
+            description="Workflow execution duration in seconds",
+            unit="s"
+        )
+        
+        self._agent_task_duration = self._otel_meter.create_histogram(
+            name="agent.task.duration",
+            description="Agent task execution duration in seconds",
+            unit="s"
+        )
+        
+        self._agent_error_counter = self._otel_meter.create_counter(
+            name="agent.errors",
+            description="Count of agent errors by type",
+            unit="1"
+        )
+        
+        self._llm_token_counter = self._otel_meter.create_counter(
+            name="llm.tokens",
+            description="LLM token usage",
+            unit="1"
+        )
+        
+        logger.info("OpenTelemetry metrics instruments created")
     
     def create_trace(
         self,
@@ -270,15 +378,165 @@ class ObservabilityManager:
                 logger.debug("Flushed LangFuse traces")
             except Exception as e:
                 logger.error(f"Failed to flush LangFuse: {e}")
+    
+    def record_workflow_duration(
+        self,
+        duration_seconds: float,
+        workflow_id: str,
+        status: str,
+        agent_count: int = 0
+    ):
+        """
+        Record workflow execution duration to CloudWatch.
+        
+        Args:
+            duration_seconds: Workflow duration
+            workflow_id: Workflow execution ID
+            status: Workflow status (completed, failed, etc.)
+            agent_count: Number of agents executed
+        """
+        if self._workflow_duration:
+            try:
+                self._workflow_duration.record(
+                    duration_seconds,
+                    attributes={
+                        "workflow.id": workflow_id,
+                        "workflow.status": status,
+                        "workflow.agent_count": agent_count
+                    }
+                )
+                logger.debug(f"Recorded workflow duration: {duration_seconds}s")
+            except Exception as e:
+                logger.error(f"Failed to record workflow duration: {e}")
+    
+    def record_agent_task_duration(
+        self,
+        duration_seconds: float,
+        agent_name: str,
+        status: str,
+        task_id: str
+    ):
+        """
+        Record agent task execution duration to CloudWatch.
+        
+        Args:
+            duration_seconds: Task duration
+            agent_name: Name of the agent
+            status: Task status
+            task_id: Task ID
+        """
+        if self._agent_task_duration:
+            try:
+                self._agent_task_duration.record(
+                    duration_seconds,
+                    attributes={
+                        "agent.name": agent_name,
+                        "agent.status": status,
+                        "agent.task_id": task_id
+                    }
+                )
+                logger.debug(f"Recorded agent task duration: {agent_name} - {duration_seconds}s")
+            except Exception as e:
+                logger.error(f"Failed to record agent task duration: {e}")
+    
+    def record_agent_error(
+        self,
+        agent_name: str,
+        error_type: str,
+        error_code: str
+    ):
+        """
+        Record agent error to CloudWatch.
+        
+        Args:
+            agent_name: Name of the agent
+            error_type: Type of error
+            error_code: Error code
+        """
+        if self._agent_error_counter:
+            try:
+                self._agent_error_counter.add(
+                    1,
+                    attributes={
+                        "agent.name": agent_name,
+                        "error.type": error_type,
+                        "error.code": error_code
+                    }
+                )
+                logger.debug(f"Recorded agent error: {agent_name} - {error_type}")
+            except Exception as e:
+                logger.error(f"Failed to record agent error: {e}")
+    
+    def record_llm_tokens(
+        self,
+        token_count: int,
+        token_type: str,
+        model: str
+    ):
+        """
+        Record LLM token usage to CloudWatch.
+        
+        Args:
+            token_count: Number of tokens
+            token_type: Type of tokens (prompt, completion, total)
+            model: Model name
+        """
+        if self._llm_token_counter:
+            try:
+                self._llm_token_counter.add(
+                    token_count,
+                    attributes={
+                        "llm.token_type": token_type,
+                        "llm.model": model
+                    }
+                )
+                logger.debug(f"Recorded LLM tokens: {model} - {token_type}: {token_count}")
+            except Exception as e:
+                logger.error(f"Failed to record LLM tokens: {e}")
+    
+    def start_span(self, name: str, attributes: Optional[dict] = None):
+        """
+        Start an OTEL span for distributed tracing.
+        
+        Args:
+            name: Span name
+            attributes: Optional span attributes
+        
+        Returns:
+            Span context manager or None
+        """
+        if self._otel_tracer:
+            try:
+                return self._otel_tracer.start_as_current_span(
+                    name,
+                    attributes=attributes or {}
+                )
+            except Exception as e:
+                logger.error(f"Failed to start span: {e}")
+        return contextmanager(lambda: (yield None))()
 
 
 # Global observability manager
-observability = ObservabilityManager()
+_observability_instance = None
 
 
-def init_observability():
+def get_observability_manager() -> ObservabilityManager:
+    """Get singleton observability manager instance."""
+    global _observability_instance
+    if _observability_instance is None:
+        _observability_instance = ObservabilityManager()
+    return _observability_instance
+
+
+def initialize_observability():
     """Initialize global observability manager."""
-    observability.initialize()
+    manager = get_observability_manager()
+    manager.initialize()
+
+
+# Backwards compatibility
+observability = get_observability_manager()
+init_observability = initialize_observability
 
 
 def trace_workflow(func: Callable) -> Callable:
@@ -359,6 +617,83 @@ def trace_agent(agent_name: str):
         
         return wrapper
     return decorator
+
+
+def track_agent_performance(agent_name: str):
+    """
+    Decorator to track agent performance metrics.
+    
+    Usage:
+        @track_agent_performance(agent_name="workflow_executor")
+        async def invoke_workflow(...):
+            ...
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            obs = get_observability_manager()
+            start_time = time.time()
+            
+            try:
+                result = await func(*args, **kwargs)
+                duration = time.time() - start_time
+                
+                # Record successful execution
+                obs.record_agent_task_duration(
+                    duration_seconds=duration,
+                    agent_name=agent_name,
+                    status="completed",
+                    task_id=str(uuid4())
+                )
+                
+                return result
+                
+            except Exception as e:
+                duration = time.time() - start_time
+                
+                # Record failed execution
+                obs.record_agent_task_duration(
+                    duration_seconds=duration,
+                    agent_name=agent_name,
+                    status="failed",
+                    task_id=str(uuid4())
+                )
+                
+                # Record error
+                obs.record_agent_error(
+                    agent_name=agent_name,
+                    error_type=type(e).__name__,
+                    error_code=getattr(e, 'code', 'UNKNOWN')
+                )
+                
+                raise
+        
+        return wrapper
+    return decorator
+
+
+def log_agent_action(
+    agent_name: str,
+    action: str,
+    details: Optional[dict] = None,
+    level: str = "info"
+):
+    """
+    Log agent action with structured context.
+    
+    Args:
+        agent_name: Name of the agent
+        action: Action being performed
+        details: Additional details
+        level: Log level (info, warning, error)
+    """
+    log_with_context(
+        level=level,
+        message=f"[{agent_name}] {action}",
+        agent_name=agent_name,
+        action=action,
+        **(details or {})
+    )
 
 
 # Structured logging helpers

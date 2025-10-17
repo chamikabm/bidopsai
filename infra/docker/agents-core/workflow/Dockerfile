@@ -86,16 +86,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8001/health || exit 1
 
 # Set labels for metadata
+ARG VERSION=0.1.0
+ARG BUILD_DATE
 LABEL maintainer="support@bidopsai.com" \
-      description="BidOpsAI Workflow Supervisor Agent" \
-      version="0.1.0"
+      description="BidOpsAI Workflow Supervisor Agent - AWS Bedrock AgentCore Runtime" \
+      version="${VERSION}" \
+      build-date="${BUILD_DATE}"
 
-# Run with uvicorn (no reload in production)
-CMD ["uvicorn", "supervisors.workflow.agent_executor:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8001", \
-     "--workers", "4", \
-     "--log-level", "info", \
-     "--access-log", \
-     "--proxy-headers", \
-     "--forwarded-allow-ips", "*"]
+# Run with Bedrock AgentCore SDK runtime
+# The BedrockAgentCoreApp will automatically handle the HTTP server
+CMD ["python", "-m", "supervisors.workflow.agent_executor"]

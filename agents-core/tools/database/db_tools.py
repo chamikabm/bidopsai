@@ -4,7 +4,7 @@ Consolidated database tools for agent operations.
 Provides all database CRUD operations needed by agents to interact with
 the PostgreSQL database for projects, workflows, tasks, artifacts, etc.
 
-These are async functions that can be registered with ToolManager.
+These tools use the @tool decorator for proper Strands Agent integration.
 """
 
 import json
@@ -12,6 +12,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
+
+from strands import tool
 
 from agents_core.core.database import get_database_manager
 from agents_core.core.error_handling import handle_errors
@@ -23,16 +25,17 @@ logger = logging.getLogger(__name__)
 # PROJECT TOOLS
 # ==============================================================================
 
+@tool
 @handle_errors
 async def get_project(project_id: str) -> Dict[str, Any]:
     """
-    Get project by ID.
+    Get project by ID from the database.
     
     Args:
         project_id: Project UUID as string
         
     Returns:
-        Project data as dictionary
+        Project data as dictionary including name, status, progress, metadata
     """
     db = get_database_manager()
     
@@ -52,6 +55,7 @@ async def get_project(project_id: str) -> Dict[str, Any]:
     return dict(row)
 
 
+@tool
 @handle_errors
 async def update_project(
     project_id: str,
@@ -118,6 +122,7 @@ async def update_project(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_project_documents(
     project_id: str,
@@ -153,6 +158,7 @@ async def get_project_documents(
     return [dict(row) for row in rows]
 
 
+@tool
 @handle_errors
 async def update_project_document(
     document_id: str,
@@ -208,6 +214,7 @@ async def update_project_document(
 # WORKFLOW TOOLS
 # ==============================================================================
 
+@tool
 @handle_errors
 async def create_workflow_execution(
     project_id: str,
@@ -249,6 +256,7 @@ async def create_workflow_execution(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_workflow_execution(workflow_execution_id: str) -> Dict[str, Any]:
     """Get workflow execution by ID."""
@@ -263,6 +271,7 @@ async def get_workflow_execution(workflow_execution_id: str) -> Dict[str, Any]:
     return dict(row)
 
 
+@tool
 @handle_errors
 async def update_workflow_execution(
     workflow_execution_id: str,
@@ -327,6 +336,7 @@ async def update_workflow_execution(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def create_agent_task(
     workflow_execution_id: str,
@@ -361,6 +371,7 @@ async def create_agent_task(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_agent_task(task_id: str) -> Dict[str, Any]:
     """Get agent task by ID."""
@@ -375,6 +386,7 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_agent_tasks_by_workflow(
     workflow_execution_id: str,
@@ -401,6 +413,7 @@ async def get_agent_tasks_by_workflow(
     return [dict(row) for row in rows]
 
 
+@tool
 @handle_errors
 async def update_agent_task(
     task_id: str,
@@ -487,6 +500,7 @@ async def update_agent_task(
 # ARTIFACT TOOLS
 # ==============================================================================
 
+@tool
 @handle_errors
 async def create_artifact(
     project_id: str,
@@ -521,6 +535,7 @@ async def create_artifact(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_artifact(artifact_id: str) -> Dict[str, Any]:
     """Get artifact by ID."""
@@ -535,6 +550,7 @@ async def get_artifact(artifact_id: str) -> Dict[str, Any]:
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_artifacts_by_project(project_id: str) -> List[Dict[str, Any]]:
     """Get all artifacts for a project."""
@@ -550,6 +566,7 @@ async def get_artifacts_by_project(project_id: str) -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+@tool
 @handle_errors
 async def create_artifact_version(
     artifact_id: str,
@@ -582,6 +599,7 @@ async def create_artifact_version(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_latest_artifact_version(artifact_id: str) -> Dict[str, Any]:
     """Get latest version of an artifact."""
@@ -605,6 +623,7 @@ async def get_latest_artifact_version(artifact_id: str) -> Dict[str, Any]:
 # CONVERSATION TOOLS
 # ==============================================================================
 
+@tool
 @handle_errors
 async def save_conversation_message(
     project_id: str,
@@ -643,6 +662,7 @@ async def save_conversation_message(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_conversation_history(
     project_id: str,
@@ -677,6 +697,7 @@ async def get_conversation_history(
 # GENERIC QUERY TOOL
 # ==============================================================================
 
+@tool
 @handle_errors
 async def execute_custom_query(
     query: str,
@@ -707,6 +728,7 @@ async def execute_custom_query(
 # PROJECT MEMBER AND NOTIFICATION TOOLS
 # ==============================================================================
 
+@tool
 @handle_errors
 async def get_project_members_db(project_id: str) -> List[Dict[str, Any]]:
     """
@@ -741,6 +763,7 @@ async def get_project_members_db(project_id: str) -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+@tool
 @handle_errors
 async def create_notification_db(
     user_id: str,
@@ -784,6 +807,7 @@ async def create_notification_db(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def create_submission_record_db(
     project_id: str,
@@ -834,6 +858,7 @@ async def create_submission_record_db(
     return dict(row)
 
 
+@tool
 @handle_errors
 async def get_artifact_versions_db(project_id: str) -> List[Dict[str, Any]]:
     """

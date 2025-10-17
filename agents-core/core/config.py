@@ -80,11 +80,21 @@ class AppConfig(BaseSettings):
     mcp_gateway_endpoint: Optional[str] = Field(default=None, alias="MCP_GATEWAY_ENDPOINT")
     mcp_slack_enabled: bool = Field(default=False, alias="MCP_SLACK_ENABLED")
     
-    # Observability settings
+    # Observability settings - LangFuse
     langfuse_enabled: bool = Field(default=False, alias="LANGFUSE_ENABLED")
     langfuse_public_key: Optional[str] = Field(default=None, alias="LANGFUSE_PUBLIC_KEY")
     langfuse_secret_key: Optional[str] = Field(default=None, alias="LANGFUSE_SECRET_KEY")
     langfuse_host: str = Field(default="https://cloud.langfuse.com", alias="LANGFUSE_HOST")
+    
+    # Observability settings - OpenTelemetry (OTEL)
+    otel_enabled: bool = Field(default=False, alias="OTEL_ENABLED")
+    otel_endpoint: Optional[str] = Field(default=None, alias="OTEL_ENDPOINT")
+    otel_service_name: str = Field(default="bidopsai-agent-core", alias="OTEL_SERVICE_NAME")
+    otel_export_interval_ms: int = Field(default=30000, alias="OTEL_EXPORT_INTERVAL_MS")
+    
+    # CloudWatch settings (for OTEL export)
+    cloudwatch_namespace: str = Field(default="BidOpsAI/AgentCore", alias="CLOUDWATCH_NAMESPACE")
+    cloudwatch_log_group: str = Field(default="/aws/agentcore/bidopsai", alias="CLOUDWATCH_LOG_GROUP")
     
     # SSM/Secrets Manager settings
     ssm_parameter_prefix: str = Field(default="/bidopsai/agents", alias="SSM_PARAMETER_PREFIX")

@@ -17,7 +17,9 @@ classifiers = [
 ]
 
 dependencies = [
-    # Core framework
+    # Core framework - AWS AgentCore SDK
+    "bedrock-agentcore>=1.0.0",
+    "bedrock-agentcore-starter-toolkit>=1.0.0",
     "strands-agents>=0.1.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -34,8 +36,13 @@ dependencies = [
     "mcp>=1.0.0",
     # SSE streaming
     "sse-starlette>=2.1.0",
-    # Observability
+    # Observability - LangFuse
     "langfuse>=2.50.0",
+    # Observability - OpenTelemetry (OTEL)
+    "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
+    "opentelemetry-instrumentation>=0.48b0",
     # Utilities
     "python-dotenv>=1.0.0",
     "httpx>=0.27.0",

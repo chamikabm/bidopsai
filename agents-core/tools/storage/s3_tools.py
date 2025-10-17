@@ -3,6 +3,8 @@ S3 storage tools for document and artifact management.
 
 Provides tools for agents to interact with AWS S3 for uploading/downloading
 documents, generating presigned URLs, and managing artifact storage.
+
+All tool functions use the @tool decorator for Strands Agent integration.
 """
 
 import logging
@@ -12,6 +14,7 @@ from urllib.parse import urlparse
 
 import boto3
 from botocore.exceptions import ClientError
+from strands import tool
 
 from agents_core.core.config import get_config
 from agents_core.core.error_handling import (
@@ -285,6 +288,7 @@ def get_s3_manager() -> S3Manager:
 # TOOL FUNCTIONS (for ToolManager registration)
 # ==============================================================================
 
+@tool
 @handle_errors
 async def upload_file_to_s3(
     file_content: bytes,
@@ -304,6 +308,7 @@ async def upload_file_to_s3(
     }
 
 
+@tool
 @handle_errors
 async def download_file_from_s3(s3_uri: str) -> Dict[str, Any]:
     """Download file from S3 (tool function)."""
@@ -317,6 +322,7 @@ async def download_file_from_s3(s3_uri: str) -> Dict[str, Any]:
     }
 
 
+@tool
 @handle_errors
 async def generate_s3_presigned_url(
     s3_key: str,
@@ -337,6 +343,7 @@ async def generate_s3_presigned_url(
     }
 
 
+@tool
 @handle_errors
 async def list_s3_objects(
     prefix: str = "",
@@ -354,6 +361,7 @@ async def list_s3_objects(
     }
 
 
+@tool
 @handle_errors
 async def delete_s3_object(s3_key: str) -> Dict[str, Any]:
     """Delete S3 object (tool function)."""
@@ -366,6 +374,7 @@ async def delete_s3_object(s3_key: str) -> Dict[str, Any]:
     }
 
 
+@tool
 @handle_errors
 async def copy_s3_object(
     source_key: str,

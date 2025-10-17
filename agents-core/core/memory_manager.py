@@ -41,9 +41,15 @@ class MemoryManager:
     
     Memory Scopes:
     - workflow: Per-workflow execution state (TTL: session duration)
-    - project: Long-term project context (TTL: project lifetime)  
+    - project: Long-term project context (TTL: project lifetime)
     - user_preference: User-specific preferences (TTL: 90 days)
     - agent_learning: Patterns learned from executions (TTL: 30 days)
+    - session: Per-session conversation context (TTL: 24 hours)
+    
+    Integration with AgentCore RequestContext:
+    - Uses RequestContext.session_id for session scoping
+    - Uses RequestContext.user_id for user preference scoping
+    - Stores session state for multi-turn conversations
     """
     
     def __init__(self):
@@ -342,7 +348,15 @@ class MemoryManager:
 
 
 # Global memory manager instance
-memory_manager = MemoryManager()
+_memory_manager_instance = None
+
+
+def get_memory_manager() -> MemoryManager:
+    """Get singleton memory manager instance."""
+    global _memory_manager_instance
+    if _memory_manager_instance is None:
+        _memory_manager_instance = MemoryManager()
+    return _memory_manager_instance
 
 
 async def set_memory(
@@ -353,7 +367,8 @@ async def set_memory(
     ttl_hours: Optional[int] = None
 ) -> None:
     """Store value in memory."""
-    await memory_manager.set(key, value, memory_type, scope, ttl_hours)
+    manager = get_memory_manager()
+    await manager.set(key, value, memory_type, scope, ttl_hours)
 
 
 async def get_memory(
@@ -363,7 +378,8 @@ async def get_memory(
     default: Optional[Any] = None
 ) -> Optional[dict[str, Any]]:
     """Retrieve value from memory."""
-    return await memory_manager.get(key, memory_type, scope, default)
+    manager = get_memory_manager()
+    return await manager.get(key, memory_type, scope, default)
 
 
 async def delete_memory(
@@ -372,7 +388,8 @@ async def delete_memory(
     scope: str
 ) -> bool:
     """Delete value from memory."""
-    return await memory_manager.delete(key, memory_type, scope)
+    manager = get_memory_manager()
+    return await manager.delete(key, memory_type, scope)
 
 
 async def clear_scope_memory(
@@ -380,4 +397,79 @@ async def clear_scope_memory(
     scope: str
 ) -> int:
     """Clear all memory for a scope."""
-    return await memory_manager.clear_scope(memory_type, scope)
+    manager = get_memory_manager()
+    return await manager.clear_scope(memory_type, scope)
+
+
+# Session management helpers for AgentCore RequestContext
+async def store_session_context(
+    session_id: str,
+    user_id: str,
+    context_data: dict[str, Any],
+    ttl_hours: int = 24
+) -> None:
+    """
+    Store session context for multi-turn conversations.
+    
+    Args:
+        session_id: AgentCore session ID
+        user_id: User ID
+        context_data: Session context (conversation history, active workflow, etc.)
+        ttl_hours: Time-to-live in hours (default 24)
+    """
+    key = f"session_{session_id}"
+    manager = get_memory_manager()
+    await manager.set(
+        key=key,
+        value=context_data,
+        memory_type="user_preference",  # Using user_preference for session data
+        scope=user_id,
+        ttl_hours=ttl_hours
+    )
+
+
+async def load_session_context(
+    session_id: str,
+    user_id: str
+) -> Optional[dict[str, Any]]:
+    """
+    Load session context for resuming conversations.
+    
+    Args:
+        session_id: AgentCore session ID
+        user_id: User ID
+    
+    Returns:
+        Session context or None
+    """
+    key = f"session_{session_id}"
+    manager = get_memory_manager()
+    return await manager.get(
+        key=key,
+        memory_type="user_preference",
+        scope=user_id,
+        default=None
+    )
+
+
+async def update_session_context(
+    session_id: str,
+    user_id: str,
+    updates: dict[str, Any]
+) -> None:
+    """
+    Update existing session context.
+    
+    Args:
+        session_id: AgentCore session ID
+        user_id: User ID
+        updates: Dictionary of updates to merge
+    """
+    # Load existing context
+    context = await load_session_context(session_id, user_id) or {}
+    
+    # Merge updates
+    context.update(updates)
+    
+    # Store updated context
+    await store_session_context(session_id, user_id, context)

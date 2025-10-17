@@ -1,141 +1,271 @@
 """
-AI Assistant Supervisor - FastAPI Application
+AI Assistant Supervisor - AgentCore Runtime Application
 
-Exposes /invocations endpoint for AI Assistant conversations.
-Deployed as separate AgentCore Runtime on port 8001.
+AWS Bedrock AgentCore application for AI Assistant conversations using
+Intent Router pattern. Deployed as separate AgentCore Runtime.
+
+This module provides conversational AI capabilities with intent classification
+and agent routing for bid management tasks.
+
+Key Features:
+- BedrockAgentCoreApp runtime (replaces FastAPI)
+- @app.entrypoint decorator for conversational invocation
+- Intent Router pattern for query classification
+- Native streaming with AgentCore
+- RequestContext integration
+- Session-based conversation context
+- Health check endpoint
+
+Architecture:
+- Uses AIAssistantSupervisor OOP class
+- Intent classification → Agent routing
+- Context-aware conversations
+- Multi-turn dialog support
+- AgentCore Memory integration
 """
 
 import logging
+import time
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import Dict, Any
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, HTTPException, Header, Request
-from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
+from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
+from pydantic import BaseModel, Field
 
-from core.config import get_config
-from core.conversation_manager import ConversationManager
-from core.memory_manager import MemoryManager
-from core.sse_manager import SSEManager
-from models.request_models import InvocationRequest
-from supervisors.ai_assistant.agent_builder import build_ai_assistant_graph
+from agents_core.core.config import get_config
+from agents_core.core.conversation_manager import ConversationManager
+from agents_core.core.memory_manager import get_memory_manager
+from agents_core.core.database import get_db_pool, close_db_pool
+from agents_core.core.error_handling import AgentError, ErrorCode, ErrorSeverity
+from agents_core.core.observability import (
+    log_agent_action,
+    initialize_observability,
+    track_agent_performance,
+    get_observability_manager
+)
+from agents_core.models.request_models import InvocationRequest
+from supervisors.ai_assistant.ai_assistant_supervisor import AIAssistantSupervisor
 from supervisors.ai_assistant.state_models import (
     IntentRouterState,
     ConversationContext,
 )
-from tools.tool_config import configure_all_tools
+from agents_core.tools.tool_config import configure_all_tools
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="AI Assistant Supervisor",
+
+# ========================================
+# AgentCore Application
+# ========================================
+
+app = BedrockAgentCoreApp(
+    name="BidOpsAI AI Assistant",
     description="Intent-based conversational agent for bid management",
     version="1.0.0"
 )
 
-# Global instances
-sse_manager: SSEManager = None
-memory_manager: MemoryManager = None
-conversation_manager: ConversationManager = None
-ai_assistant_graph = None
 
+# ========================================
+# Application Lifecycle Management
+# ========================================
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize managers on app startup"""
-    global sse_manager, memory_manager, conversation_manager
+    """
+    Application startup - initialize core services.
     
+    Initializes:
+    - Database pool
+    - Memory manager
+    - Conversation manager
+    - Observability (LangFuse, OTEL)
+    - Tool configuration
+    """
     logger.info("Starting AI Assistant Supervisor...")
     
-    # Initialize SSE manager
-    sse_manager = SSEManager()
-    await sse_manager.initialize()
-    logger.info("SSE Manager initialized")
+    log_agent_action(
+        agent_name="ai_assistant_executor",
+        action="startup_begin",
+        details={"environment": get_config().environment}
+    )
     
-    # Initialize memory manager
-    memory_manager = MemoryManager()
-    await memory_manager.initialize()
-    logger.info("Memory Manager initialized")
-    
-    # Initialize conversation manager
-    conversation_manager = ConversationManager()
-    logger.info("Conversation Manager initialized")
-    
-    # Initialize tool configuration (Phase 10: T109)
-    configure_all_tools()
-    logger.info("Tool configuration initialized")
-    
-    logger.info("AI Assistant Supervisor started successfully on port 8001")
+    try:
+        # Initialize core services
+        await get_db_pool()
+        get_memory_manager()
+        initialize_observability()
+        
+        # Initialize tool configuration
+        configure_all_tools()
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="startup_complete",
+            details={
+                "services": ["database", "memory", "observability", "tools"],
+                "mode": "ai_assistant"
+            }
+        )
+        
+        logger.info("AI Assistant Supervisor started successfully on port 8001")
+        
+    except Exception as e:
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="startup_failed",
+            details={"error": str(e)},
+            level="error"
+        )
+        raise
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on app shutdown"""
+    """
+    Application shutdown - cleanup resources.
+    
+    Cleanup:
+    - Close database connections
+    - Flush observability data
+    """
     logger.info("Shutting down AI Assistant Supervisor...")
     
-    if sse_manager:
-        await sse_manager.cleanup()
-    if memory_manager:
-        await memory_manager.cleanup()
+    log_agent_action(
+        agent_name="ai_assistant_executor",
+        action="shutdown_begin"
+    )
     
-    logger.info("AI Assistant Supervisor shutdown complete")
+    try:
+        # Close database pool
+        await close_db_pool()
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="shutdown_complete"
+        )
+        
+        logger.info("AI Assistant Supervisor shutdown complete")
+        
+    except Exception as e:
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="shutdown_failed",
+            details={"error": str(e)},
+            level="error"
+        )
 
+
+# ========================================
+# Health Check Endpoint
+# ========================================
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "ai-assistant-supervisor",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    """
+    Health check endpoint.
+    
+    Checks:
+    - Database connectivity
+    - Memory manager status
+    
+    Returns:
+        JSON with health status and service checks
+    """
+    try:
+        # Check database
+        db_pool = await get_db_pool()
+        db_healthy = db_pool is not None
+        
+        # Check memory manager
+        memory_manager = get_memory_manager()
+        memory_healthy = memory_manager is not None
+        
+        all_healthy = db_healthy and memory_healthy
+        
+        return {
+            "status": "healthy" if all_healthy else "unhealthy",
+            "service": "ai-assistant-supervisor",
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": {
+                "database": "up" if db_healthy else "down",
+                "memory": "up" if memory_healthy else "down"
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "ai-assistant-supervisor",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
 
-@app.post("/invocations")
+# ========================================
+# Main AI Assistant Invocation Entrypoint
+# ========================================
+
+@app.entrypoint()
+@track_agent_performance(agent_name="ai_assistant_executor")
 async def invoke_ai_assistant(
     request: InvocationRequest,
-    authorization: str = Header(None)
-) -> StreamingResponse:
+    context: RequestContext
+):
     """
-    Invoke AI Assistant with user query
+    Invoke AI Assistant with user query (AgentCore native streaming).
     
     This endpoint handles conversational AI interactions using Intent Router pattern.
     Each query is classified and routed to appropriate sub-agent.
     
-    Request payload:
-    {
-        "user_id": "uuid",
-        "session_id": "string",
-        "project_id": "uuid",  // Optional
-        "user_input": {
-            "chat": "What's the status of project XYZ?"
-        }
-    }
-    
-    Response: SSE stream with agent responses
+    Yields events in real-time as they occur:
+    - intent_classifying: Intent classification started
+    - intent_classified: Intent and agent selected
+    - agent_responding: Agent processing query
+    - response_ready: Final response available
+    - conversation_completed: Conversation turn finished
     
     Args:
-        request: Invocation request with user query
-        authorization: Bearer token for authentication
+        request: InvocationRequest with:
+            - user_id: UUID of user
+            - session_id: Session ID for conversation continuity
+            - project_id: Optional UUID for project context
+            - user_input: Dict with "chat" key containing user query
+        context: RequestContext from AgentCore with:
+            - user_id: Authenticated user ID
+            - session_id: AgentCore session ID
+            - metadata: Additional context
     
-    Returns:
-        StreamingResponse with SSE events
+    Yields:
+        Event dictionaries with type, status, data, timestamp
+    
+    Raises:
+        AgentError: On validation or execution errors
     """
+    conversation_id = uuid4()
+    
+    log_agent_action(
+        agent_name="ai_assistant_executor",
+        action="invocation_received",
+        details={
+            "user_id": str(request.user_id),
+            "session_id": request.session_id,
+            "conversation_id": str(conversation_id),
+            "has_project": request.project_id is not None,
+            "context_user_id": context.user_id,
+            "context_session_id": context.session_id
+        }
+    )
+    
     try:
-        # Extract JWT from Authorization header
-        cognito_jwt = None
-        if authorization and authorization.startswith("Bearer "):
-            cognito_jwt = authorization.replace("Bearer ", "")
-        
         # Validate request
         if not request.user_input or not request.user_input.get("chat"):
-            raise HTTPException(
-                status_code=400,
-                detail="user_input.chat is required for AI Assistant"
+            raise AgentError(
+                message="user_input.chat is required for AI Assistant",
+                code=ErrorCode.VALIDATION_ERROR,
+                severity=ErrorSeverity.LOW
             )
         
         user_query = request.user_input["chat"]
@@ -145,73 +275,146 @@ async def invoke_ai_assistant(
             f"Session: {request.session_id}, Query: {user_query[:100]}..."
         )
         
-        # Build AI Assistant graph with user's JWT
-        global ai_assistant_graph
-        if ai_assistant_graph is None:
-            ai_assistant_graph = build_ai_assistant_graph(cognito_jwt)
-        
         # Load conversation context from session memory
-        context = await load_conversation_context(
+        conversation_context = await _load_conversation_context(
             user_id=request.user_id,
             session_id=request.session_id,
             project_id=request.project_id
         )
         
-        # Create initial state
-        initial_state = IntentRouterState(
-            user_query=user_query,
-            conversation_context=context
+        # Persist user input to conversation history
+        if request.project_id:
+            conversation_manager = ConversationManager()
+            await conversation_manager.add_user_message(
+                project_id=request.project_id,
+                session_id=request.session_id,
+                user_id=request.user_id,
+                message_type="chat",
+                content=user_query
+            )
+        
+        # Create supervisor instance
+        supervisor = AIAssistantSupervisor(
+            cognito_jwt=context.metadata.get("jwt_token") if context.metadata else None
         )
         
-        # Create streaming response
-        return StreamingResponse(
-            stream_ai_assistant_response(
-                graph=ai_assistant_graph,
-                initial_state=initial_state,
-                request=request
-            ),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"  # Disable nginx buffering
+        # Execute AI Assistant with real-time streaming
+        final_response = None
+        final_agent = None
+        final_metadata = {}
+        
+        async for event in _execute_ai_assistant_with_streaming(
+            supervisor=supervisor,
+            user_query=user_query,
+            conversation_context=conversation_context,
+            conversation_id=conversation_id,
+            request=request,
+            context=context
+        ):
+            # Yield each event immediately to AgentCore
+            yield event
+            
+            # Capture final response for persistence
+            if event["type"] == "response_ready":
+                final_response = event.get("response")
+                final_metadata = event.get("metadata", {})
+            elif event["type"] == "intent_classified":
+                final_agent = event.get("agent", "ai_assistant")
+        
+        # Persist agent response after streaming completes
+        if request.project_id and final_response:
+            conversation_manager = ConversationManager()
+            await conversation_manager.add_agent_message(
+                project_id=request.project_id,
+                session_id=request.session_id,
+                agent_name=final_agent,
+                content=final_response,
+                metadata=final_metadata
+            )
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="invocation_complete",
+            details={
+                "conversation_id": str(conversation_id),
+                "agent": final_agent
             }
         )
         
-    except ValidationError as e:
-        logger.error(f"Validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    except AgentError as e:
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="invocation_failed",
+            details={
+                "conversation_id": str(conversation_id),
+                "error_code": e.code,
+                "error_message": str(e),
+                "severity": e.severity
+            },
+            level="error"
+        )
+        raise
+        
     except Exception as e:
-        logger.error(f"Error invoking AI Assistant: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="invocation_failed",
+            details={
+                "conversation_id": str(conversation_id),
+                "error": str(e)
+            },
+            level="error"
+        )
+        
+        raise AgentError(
+            message=f"AI Assistant error: {str(e)}",
+            code=ErrorCode.INTERNAL_ERROR,
+            severity=ErrorSeverity.HIGH
+        )
 
 
-async def load_conversation_context(
+# ========================================
+# Helper Functions
+# ========================================
+
+async def _load_conversation_context(
     user_id: UUID,
     session_id: str,
     project_id: UUID = None
 ) -> ConversationContext:
     """
-    Load conversation context from session memory
+    Load conversation context from AgentCore Memory.
+    
+    Uses AgentCore RequestContext-compatible session storage for
+    multi-turn conversation continuity.
     
     Args:
         user_id: User ID
-        session_id: Session ID
+        session_id: Session ID from RequestContext
         project_id: Optional project ID for context
     
     Returns:
         ConversationContext with user preferences and history
     """
     try:
-        # Load from session memory (if exists)
-        session_key = f"user_{user_id}_session_{session_id}"
-        session_data = await memory_manager.retrieve(
-            key=session_key,
-            memory_type="session",
-            scope="user"
+        from agents_core.core.memory_manager import load_session_context
+        
+        # Load session context using RequestContext-compatible helper
+        session_data = await load_session_context(
+            session_id=session_id,
+            user_id=str(user_id)
         )
         
         if session_data:
+            log_agent_action(
+                agent_name="ai_assistant_executor",
+                action="session_context_loaded",
+                details={
+                    "session_id": session_id,
+                    "has_history": len(session_data.get("conversation_history", [])) > 0
+                }
+            )
+            
             return ConversationContext(
                 user_id=user_id,
                 session_id=session_id,
@@ -222,6 +425,7 @@ async def load_conversation_context(
             )
         
         # Create new context if not found
+        logger.info(f"No existing session context for {session_id}, creating new")
         return ConversationContext(
             user_id=user_id,
             session_id=session_id,
@@ -238,166 +442,257 @@ async def load_conversation_context(
         )
 
 
-async def stream_ai_assistant_response(
-    graph,
-    initial_state: IntentRouterState,
-    request: InvocationRequest
-) -> AsyncGenerator[str, None]:
+async def _execute_ai_assistant_with_streaming(
+    supervisor: AIAssistantSupervisor,
+    user_query: str,
+    conversation_context: ConversationContext,
+    conversation_id: UUID,
+    request: InvocationRequest,
+    context: RequestContext
+):
     """
-    Stream AI Assistant response as SSE events
+    Execute AI Assistant with real-time event streaming.
+    
+    Yields events as they occur during intent classification and agent execution.
     
     Args:
-        graph: Compiled AI Assistant graph
-        initial_state: Initial router state
-        request: Original request
+        supervisor: AIAssistantSupervisor instance
+        user_query: User's query text
+        conversation_context: Loaded conversation context
+        conversation_id: UUID for this conversation turn
+        request: Original invocation request
+        context: RequestContext from AgentCore
     
     Yields:
-        SSE formatted events
+        Event dictionaries with type, data, timestamp
     """
-    conversation_id = uuid4()
+    log_agent_action(
+        agent_name="ai_assistant_executor",
+        action="ai_assistant_execution_start",
+        details={
+            "conversation_id": str(conversation_id),
+            "query_length": len(user_query)
+        }
+    )
+    
+    # Start conversation performance tracking
+    conversation_start_time = time.time()
+    obs = get_observability_manager()
     
     try:
-        # Send conversation_started event
-        await sse_manager.send_event(
-            event_type="conversation_started",
-            data={
-                "conversation_id": str(conversation_id),
-                "user_query": initial_state.user_query,
-                "timestamp": datetime.utcnow().isoformat()
-            },
-            project_id=request.project_id,
-            session_id=request.session_id
+        # Create initial state
+        initial_state = IntentRouterState(
+            user_query=user_query,
+            conversation_context=conversation_context
         )
-        yield sse_manager.format_sse_event("conversation_started", {
+        
+        # Get compiled graph
+        graph = supervisor.get_graph()
+        
+        # Configure graph
+        config = {
+            "configurable": {
+                "thread_id": request.session_id,
+                "user_id": str(request.user_id)
+            }
+        }
+        
+        # Emit intent classification started
+        yield {
+            "type": "intent_classifying",
+            "status": "classifying user intent",
             "conversation_id": str(conversation_id),
-            "user_query": initial_state.user_query
-        })
+            "timestamp": datetime.utcnow().isoformat()
+        }
         
-        # Persist user input to conversation history
-        if request.project_id:
-            await conversation_manager.add_user_message(
-                project_id=request.project_id,
-                session_id=request.session_id,
-                user_id=request.user_id,
-                message_type="chat",
-                content=initial_state.user_query
-            )
+        # Execute graph with streaming
+        final_state = None
+        async for event in graph.astream(initial_state, config):
+            # Each event represents a node completion
+            node_name = list(event.keys())[0] if event else None
+            node_state = event.get(node_name) if node_name else None
+            
+            if node_name == "classify_intent" and node_state:
+                # Intent classified
+                if node_state.classified_intent:
+                    yield {
+                        "type": "intent_classified",
+                        "intent": node_state.classified_intent.intent.value,
+                        "confidence": node_state.classified_intent.confidence,
+                        "agent": node_state.selected_agent,
+                        "conversation_id": str(conversation_id),
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+            
+            elif node_name == "route_to_agent" and node_state:
+                # Agent selected and responding
+                yield {
+                    "type": "agent_responding",
+                    "agent": node_state.selected_agent,
+                    "conversation_id": str(conversation_id),
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            
+            # Update final state
+            final_state = node_state if node_state else final_state
         
-        # Execute graph (streaming)
-        logger.info("Executing AI Assistant graph...")
-        
-        # Send intent_classifying event
-        await sse_manager.send_event(
-            event_type="intent_classifying",
-            data={"status": "classifying user intent"},
-            project_id=request.project_id,
-            session_id=request.session_id
-        )
-        yield sse_manager.format_sse_event("intent_classifying", {})
-        
-        # Execute graph
-        final_state = await graph.ainvoke(initial_state)
-        
-        # Send intent_classified event
-        if final_state.classified_intent:
-            await sse_manager.send_event(
-                event_type="intent_classified",
-                data={
-                    "intent": final_state.classified_intent.intent.value,
-                    "confidence": final_state.classified_intent.confidence,
-                    "agent": final_state.selected_agent
-                },
-                project_id=request.project_id,
-                session_id=request.session_id
-            )
-            yield sse_manager.format_sse_event("intent_classified", {
-                "intent": final_state.classified_intent.intent.value,
-                "confidence": final_state.classified_intent.confidence,
-                "agent": final_state.selected_agent
-            })
-        
-        # Send agent_responding event
-        await sse_manager.send_event(
-            event_type="agent_responding",
-            data={"agent": final_state.selected_agent},
-            project_id=request.project_id,
-            session_id=request.session_id
-        )
-        yield sse_manager.format_sse_event("agent_responding", {
-            "agent": final_state.selected_agent
-        })
-        
-        # Send response_ready event with full response
-        await sse_manager.send_event(
-            event_type="response_ready",
-            data={
+        # Emit response ready
+        if final_state and final_state.agent_response:
+            yield {
+                "type": "response_ready",
                 "response": final_state.agent_response,
-                "metadata": final_state.response_metadata
-            },
-            project_id=request.project_id,
-            session_id=request.session_id
-        )
-        yield sse_manager.format_sse_event("response_ready", {
-            "response": final_state.agent_response,
-            "metadata": final_state.response_metadata
-        })
+                "metadata": final_state.response_metadata,
+                "conversation_id": str(conversation_id),
+                "timestamp": datetime.utcnow().isoformat()
+            }
         
-        # Persist agent response to conversation history
-        if request.project_id:
-            await conversation_manager.add_agent_message(
-                project_id=request.project_id,
-                session_id=request.session_id,
-                agent_name=final_state.selected_agent or "ai_assistant",
-                content=final_state.agent_response,
-                metadata=final_state.response_metadata
-            )
-        
-        # Send conversation_completed event
+        # Calculate duration
         final_state.completed_at = datetime.utcnow()
         duration = (final_state.completed_at - final_state.started_at).total_seconds()
         
-        await sse_manager.send_event(
-            event_type="conversation_completed",
-            data={
-                "conversation_id": str(conversation_id),
-                "duration_seconds": duration,
-                "errors": final_state.errors
-            },
-            project_id=request.project_id,
-            session_id=request.session_id
+        # Record conversation duration metric
+        conversation_duration = time.time() - conversation_start_time
+        agent_name = f"ai_assistant_{final_state.selected_agent}" if final_state.selected_agent else "ai_assistant"
+        obs.record_agent_task_duration(
+            duration_seconds=conversation_duration,
+            agent_name=agent_name,
+            status="completed",
+            task_id=str(conversation_id)
         )
-        yield sse_manager.format_sse_event("conversation_completed", {
-            "conversation_id": str(conversation_id),
-            "duration_seconds": duration
-        })
         
-        logger.info(f"AI Assistant conversation completed in {duration:.2f}s")
+        # Record LLM token usage if available
+        if final_state.response_metadata and "usage" in final_state.response_metadata:
+            usage = final_state.response_metadata["usage"]
+            if "total_tokens" in usage:
+                obs.record_llm_tokens(
+                    token_count=usage["total_tokens"],
+                    token_type="total",
+                    model=get_config().bedrock_model_id
+                )
+        
+        # Emit conversation completed
+        yield {
+            "type": "conversation_completed",
+            "conversation_id": str(conversation_id),
+            "duration_seconds": duration,
+            "errors": final_state.errors,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Persist session context for conversation continuity
+        await _persist_session_context(
+            session_id=request.session_id,
+            user_id=str(request.user_id),
+            conversation_context=conversation_context,
+            final_state=final_state
+        )
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="ai_assistant_execution_complete",
+            details={
+                "conversation_id": str(conversation_id),
+                "duration": duration,
+                "intent": final_state.classified_intent.intent.value if final_state.classified_intent else None,
+                "agent": final_state.selected_agent
+            }
+        )
         
     except Exception as e:
-        logger.error(f"Error streaming AI Assistant response: {e}", exc_info=True)
-        
-        # Send error event
-        await sse_manager.send_event(
-            event_type="error_occurred",
-            data={
-                "error_code": "AI_ASSISTANT_ERROR",
-                "error_message": str(e),
-                "conversation_id": str(conversation_id)
-            },
-            project_id=request.project_id,
-            session_id=request.session_id
+        # Record error metric
+        conversation_duration = time.time() - conversation_start_time
+        obs.record_agent_error(
+            agent_name="ai_assistant_executor",
+            error_type=type(e).__name__,
+            error_code=getattr(e, 'code', ErrorCode.EXECUTION_ERROR)
         )
-        yield sse_manager.format_sse_event("error_occurred", {
-            "error_code": "AI_ASSISTANT_ERROR",
-            "error_message": str(e)
-        })
+        
+        # Record failed conversation duration
+        obs.record_agent_task_duration(
+            duration_seconds=conversation_duration,
+            agent_name="ai_assistant_error",
+            status="failed",
+            task_id=str(conversation_id)
+        )
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="ai_assistant_execution_failed",
+            details={
+                "conversation_id": str(conversation_id),
+                "error": str(e),
+                "duration_seconds": conversation_duration
+            },
+            level="error"
+        )
+        
+        raise AgentError(
+            message=f"AI Assistant execution failed: {str(e)}",
+            code=ErrorCode.EXECUTION_ERROR,
+            severity=ErrorSeverity.HIGH
+        )
 
+
+async def _persist_session_context(
+    session_id: str,
+    user_id: str,
+    conversation_context: ConversationContext,
+    final_state: IntentRouterState
+) -> None:
+    """
+    Persist session context for conversation continuity.
+    
+    Args:
+        session_id: Session ID
+        user_id: User ID
+        conversation_context: Current conversation context
+        final_state: Final state from execution
+    """
+    try:
+        from agents_core.core.memory_manager import update_session_context
+        
+        # Prepare session updates
+        session_updates = {
+            "conversation_history": conversation_context.conversation_history or [],
+            "last_intent": final_state.classified_intent.intent.value if final_state.classified_intent else None,
+            "last_agent": final_state.selected_agent,
+            "last_interaction": datetime.utcnow().isoformat()
+        }
+        
+        # Update session context
+        await update_session_context(
+            session_id=session_id,
+            user_id=user_id,
+            updates=session_updates
+        )
+        
+        log_agent_action(
+            agent_name="ai_assistant_executor",
+            action="session_context_persisted",
+            details={
+                "session_id": session_id,
+                "history_length": len(session_updates["conversation_history"])
+            }
+        )
+        
+    except Exception as e:
+        # Log but don't fail on session persistence errors
+        logger.warning(f"Failed to persist session context: {e}")
+
+
+# ========================================
+# Main Entry Point
+# ========================================
 
 if __name__ == "__main__":
+    # Use bedrock_agentcore_starter_toolkit for deployment
+    # For local development, AgentCore provides dev server
     import uvicorn
     
     config = get_config()
     
+    # Note: In production, this will be deployed via AgentCore Runtime
+    # For local dev, we can still use uvicorn with the ASGI app
     uvicorn.run(
         app,
         host="0.0.0.0",
