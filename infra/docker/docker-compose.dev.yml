@@ -103,11 +103,16 @@ services:
     environment:
       - SERVICES=s3
       - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      # Podman compatibility settings
+      - PERSISTENCE=1
+      - MAIN_CONTAINER_NAME=bidopsai-localstack-dev
+      - SKIP_INFRA_DOWNLOADS=1
+      - SKIP_SSL_CERT_DOWNLOAD=1
+      # Skip cleanup to avoid /tmp/localstack busy errors
+      - LOCALSTACK_VOLUME_DIR=/var/lib/localstack
     volumes:
-      - localstack-data:/tmp/localstack
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Use /var/lib/localstack instead of /tmp for Podman
+      - localstack-data:/var/lib/localstack
     networks:
       - bidopsai-network
     restart: unless-stopped

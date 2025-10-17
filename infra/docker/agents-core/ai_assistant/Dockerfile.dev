@@ -20,12 +20,13 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 # Copy project files
 COPY agents-core/pyproject.toml agents-core/uv.lock* agents-core/README.md ./
 
-# Install dependencies with UV
-RUN uv sync --frozen --no-dev || \
-    uv pip install --system -r pyproject.toml --all-extras
+# Install dependencies with UV directly to system (no venv for Docker)
+RUN uv pip install --system --no-cache -e . || \
+    (echo "Direct install failed, trying with all extras..." && \
+     uv pip install --system --no-cache fastapi uvicorn psycopg2-binary boto3 strands-agents langchain anthropic openai)
 
 # Install development tools
-RUN uv pip install --system debugpy ipython ipdb
+RUN uv pip install --system --no-cache debugpy ipython ipdb
 
 # Copy source code
 COPY agents-core/ ./
@@ -38,6 +39,6 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV LOG_LEVEL=DEBUG
 
-# Run with hot reload using uvicorn --reload
-CMD ["uv", "run", "uvicorn", "supervisors.ai_assistant.agent_executor:app", \
-     "--host", "0.0.0.0", "--port", "8001", "--reload", "--log-level", "debug"]
+# Run directly with uvicorn (installed system-wide)
+CMD ["uvicorn", "supervisors.ai_assistant.agent_executor:app", \
+     "--host", "0.0.0.0", "--port", "8002", "--reload", "--log-level", "debug"]

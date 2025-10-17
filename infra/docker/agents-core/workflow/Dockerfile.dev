@@ -34,12 +34,14 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 # Copy only dependency files first (for layer caching)
 COPY agents-core/pyproject.toml agents-core/uv.lock* agents-core/README.md ./
 
-# Install dependencies with UV using sync (recommended for projects with uv.lock)
-RUN uv sync --frozen --no-dev || \
-    uv pip install --system -r pyproject.toml --all-extras
+# Install dependencies with UV directly to system (no venv for Docker)
+# Use --system flag to install globally instead of in a venv
+RUN uv pip install --system --no-cache -e . || \
+    (echo "Direct install failed, trying with all extras..." && \
+     uv pip install --system --no-cache fastapi uvicorn psycopg2-binary boto3 strands-agents langchain anthropic openai)
 
 # Install development tools
-RUN uv pip install --system debugpy ipython ipdb
+RUN uv pip install --system --no-cache debugpy ipython ipdb
 
 # Copy application code
 COPY agents-core/ ./
