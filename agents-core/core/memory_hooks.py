@@ -11,8 +11,8 @@ Features:
 - Error handling and logging
 
 Usage:
-    from agents_core.core.memory_hooks import create_memory_hook_provider
-    from agents_core.core.agentcore_memory import get_agentcore_memory_manager
+    from core.memory_hooks import create_memory_hook_provider
+    from core.agentcore_memory import get_agentcore_memory_manager
     
     # Create memory manager
     memory_manager = get_agentcore_memory_manager()

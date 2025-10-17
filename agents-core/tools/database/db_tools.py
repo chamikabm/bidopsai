@@ -15,8 +15,7 @@ from uuid import UUID
 
 from strands import tool
 
-from agents_core.core.database import get_database_manager
-from agents_core.core.error_handling import handle_errors
+from core.database import get_database_manager
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,6 @@ logger = logging.getLogger(__name__)
 # ==============================================================================
 
 @tool
-@handle_errors
 async def get_project(project_id: str) -> Dict[str, Any]:
     """
     Get project by ID from the database.
@@ -56,7 +54,6 @@ async def get_project(project_id: str) -> Dict[str, Any]:
 
 
 @tool
-@handle_errors
 async def update_project(
     project_id: str,
     status: Optional[str] = None,
@@ -123,7 +120,6 @@ async def update_project(
 
 
 @tool
-@handle_errors
 async def get_project_documents(
     project_id: str,
     parsing_status: Optional[str] = None
@@ -159,7 +155,6 @@ async def get_project_documents(
 
 
 @tool
-@handle_errors
 async def update_project_document(
     document_id: str,
     processed_file_location: Optional[str] = None,
@@ -215,7 +210,6 @@ async def update_project_document(
 # ==============================================================================
 
 @tool
-@handle_errors
 async def create_workflow_execution(
     project_id: str,
     session_id: str,
@@ -257,7 +251,6 @@ async def create_workflow_execution(
 
 
 @tool
-@handle_errors
 async def get_workflow_execution(workflow_execution_id: str) -> Dict[str, Any]:
     """Get workflow execution by ID."""
     db = get_database_manager()
@@ -272,7 +265,6 @@ async def get_workflow_execution(workflow_execution_id: str) -> Dict[str, Any]:
 
 
 @tool
-@handle_errors
 async def update_workflow_execution(
     workflow_execution_id: str,
     status: Optional[str] = None,
@@ -337,7 +329,6 @@ async def update_workflow_execution(
 
 
 @tool
-@handle_errors
 async def create_agent_task(
     workflow_execution_id: str,
     agent: str,
@@ -372,7 +363,6 @@ async def create_agent_task(
 
 
 @tool
-@handle_errors
 async def get_agent_task(task_id: str) -> Dict[str, Any]:
     """Get agent task by ID."""
     db = get_database_manager()
@@ -387,7 +377,6 @@ async def get_agent_task(task_id: str) -> Dict[str, Any]:
 
 
 @tool
-@handle_errors
 async def get_agent_tasks_by_workflow(
     workflow_execution_id: str,
     status: Optional[str] = None
@@ -414,7 +403,6 @@ async def get_agent_tasks_by_workflow(
 
 
 @tool
-@handle_errors
 async def update_agent_task(
     task_id: str,
     status: Optional[str] = None,
@@ -501,7 +489,46 @@ async def update_agent_task(
 # ==============================================================================
 
 @tool
-@handle_errors
+async def get_next_incomplete_task(
+    workflow_execution_id: str,
+    agent: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Get the next incomplete task for a workflow.
+    
+    Args:
+        workflow_execution_id: Workflow execution ID
+        agent: Optional agent name filter
+        
+    Returns:
+        Next incomplete task or None
+    """
+    db = get_database_manager()
+    
+    if agent:
+        query = """
+            SELECT * FROM agent_tasks
+            WHERE workflow_execution_id = $1
+            AND agent = $2
+            AND status IN ('OPEN', 'IN_PROGRESS')
+            ORDER BY sequence_order
+            LIMIT 1
+        """
+        row = await db.fetch_one(query, UUID(workflow_execution_id), agent)
+    else:
+        query = """
+            SELECT * FROM agent_tasks
+            WHERE workflow_execution_id = $1
+            AND status IN ('OPEN', 'IN_PROGRESS')
+            ORDER BY sequence_order
+            LIMIT 1
+        """
+        row = await db.fetch_one(query, UUID(workflow_execution_id))
+    
+    return dict(row) if row else None
+
+
+@tool
 async def create_artifact(
     project_id: str,
     name: str,
@@ -536,7 +563,6 @@ async def create_artifact(
 
 
 @tool
-@handle_errors
 async def get_artifact(artifact_id: str) -> Dict[str, Any]:
     """Get artifact by ID."""
     db = get_database_manager()
@@ -551,7 +577,6 @@ async def get_artifact(artifact_id: str) -> Dict[str, Any]:
 
 
 @tool
-@handle_errors
 async def get_artifacts_by_project(project_id: str) -> List[Dict[str, Any]]:
     """Get all artifacts for a project."""
     db = get_database_manager()
@@ -567,7 +592,6 @@ async def get_artifacts_by_project(project_id: str) -> List[Dict[str, Any]]:
 
 
 @tool
-@handle_errors
 async def create_artifact_version(
     artifact_id: str,
     version_number: int,
@@ -600,7 +624,56 @@ async def create_artifact_version(
 
 
 @tool
-@handle_errors
+async def update_artifact_version(
+    version_id: str,
+    location: Optional[str] = None,
+    content: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Update artifact version.
+    
+    Args:
+        version_id: Version UUID
+        location: S3 location of exported file
+        content: Updated content
+        
+    Returns:
+        Updated artifact version
+    """
+    db = get_database_manager()
+    
+    updates = []
+    params = [UUID(version_id)]
+    param_idx = 2
+    
+    if location is not None:
+        updates.append(f"location = ${param_idx}")
+        params.append(location)
+        param_idx += 1
+    
+    if content is not None:
+        updates.append(f"content = ${param_idx}")
+        params.append(json.dumps(content))
+        param_idx += 1
+    
+    if not updates:
+        # If no updates, just return current version
+        query = "SELECT * FROM artifact_versions WHERE id = $1"
+        row = await db.fetch_one(query, UUID(version_id))
+        return dict(row) if row else {}
+    
+    query = f"""
+        UPDATE artifact_versions
+        SET {', '.join(updates)}
+        WHERE id = $1
+        RETURNING *
+    """
+    
+    row = await db.fetch_one(query, *params)
+    return dict(row)
+
+
+@tool
 async def get_latest_artifact_version(artifact_id: str) -> Dict[str, Any]:
     """Get latest version of an artifact."""
     db = get_database_manager()
@@ -624,7 +697,6 @@ async def get_latest_artifact_version(artifact_id: str) -> Dict[str, Any]:
 # ==============================================================================
 
 @tool
-@handle_errors
 async def save_conversation_message(
     project_id: str,
     session_id: str,
@@ -663,7 +735,6 @@ async def save_conversation_message(
 
 
 @tool
-@handle_errors
 async def get_conversation_history(
     project_id: str,
     session_id: Optional[str] = None,
@@ -698,7 +769,6 @@ async def get_conversation_history(
 # ==============================================================================
 
 @tool
-@handle_errors
 async def execute_custom_query(
     query: str,
     params: Optional[List[Any]] = None,
@@ -729,8 +799,7 @@ async def execute_custom_query(
 # ==============================================================================
 
 @tool
-@handle_errors
-async def get_project_members_db(project_id: str) -> List[Dict[str, Any]]:
+async def get_project_members(project_id: str) -> List[Dict[str, Any]]:
     """
     Get all members of a project with user details.
     
@@ -764,8 +833,7 @@ async def get_project_members_db(project_id: str) -> List[Dict[str, Any]]:
 
 
 @tool
-@handle_errors
-async def create_notification_db(
+async def create_notification(
     user_id: str,
     type: str,
     title: str,
@@ -808,8 +876,7 @@ async def create_notification_db(
 
 
 @tool
-@handle_errors
-async def create_submission_record_db(
+async def create_submission_record(
     project_id: str,
     artifact_id: str,
     portal_name: str,
@@ -859,8 +926,7 @@ async def create_submission_record_db(
 
 
 @tool
-@handle_errors
-async def get_artifact_versions_db(project_id: str) -> List[Dict[str, Any]]:
+async def get_artifact_versions(project_id: str) -> List[Dict[str, Any]]:
     """
     Get all artifact versions for a project (latest version of each artifact).
     

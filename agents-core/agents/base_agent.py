@@ -16,7 +16,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 
-from strands_agents import Agent
+from strands import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ class BaseAgent(ABC):
             This method accesses the tool manager to retrieve agent-specific
             tools. Subclasses can override to customize tool loading.
         """
-        from agents_core.tools.tool_manager import get_tool_manager
+        from tools.tool_manager import get_tool_manager
         
         tool_manager = get_tool_manager()
         tools = tool_manager.get_agent_tools(self.agent_name, self._mode)
@@ -213,7 +213,7 @@ class BaseAgent(ABC):
             This method accesses the prompt manager to retrieve agent-specific
             prompts. Subclasses can override to customize prompt loading.
         """
-        from agents_core.prompts.prompt_manager import get_agent_prompt
+        from prompts.prompt_manager import get_agent_prompt
         
         system_prompt = get_agent_prompt(self.agent_name, self._mode)
         
@@ -235,7 +235,7 @@ class BaseAgent(ABC):
             Uses ModelFactory to create model with provider-specific settings.
             Subclasses can override to customize model creation.
         """
-        from agents_core.llm.model_factory import ModelFactory
+        from llm.model_factory import ModelFactory
         
         model = ModelFactory.create_model(
             provider=self._provider,

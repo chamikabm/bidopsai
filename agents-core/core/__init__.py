@@ -34,12 +34,15 @@ from core.config import (
 )
 
 from core.memory_manager import (
-    memory_manager,
+    get_memory_manager,
     set_memory,
     get_memory,
     delete_memory,
     clear_scope_memory,
-    MemoryType
+    MemoryType,
+    store_session_context,
+    load_session_context,
+    update_session_context
 )
 
 from core.observability import (
@@ -90,12 +93,15 @@ __all__ = [
     "AgentConfiguration",
     
     # Memory
-    "memory_manager",
+    "get_memory_manager",
     "set_memory",
     "get_memory",
     "delete_memory",
     "clear_scope_memory",
     "MemoryType",
+    "store_session_context",
+    "load_session_context",
+    "update_session_context",
     
     # Observability
     "observability",

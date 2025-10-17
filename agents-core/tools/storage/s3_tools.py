@@ -16,15 +16,15 @@ import boto3
 from botocore.exceptions import ClientError
 from strands import tool
 
-from agents_core.core.config import get_config
-from agents_core.core.error_handling import (
+from core.config import get_config
+from core.error_handling import (
     ErrorCode,
     ErrorSeverity,
     RetryableError,
     handle_errors,
     retry_with_backoff,
 )
-from agents_core.core.observability import trace_operation
+from core.observability import trace_operation
 
 logger = logging.getLogger(__name__)
 

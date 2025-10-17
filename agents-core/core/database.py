@@ -278,6 +278,16 @@ class DatabasePool:
 db_pool = DatabasePool()
 
 
+def get_database_manager() -> DatabasePool:
+    """
+    Get the global database pool instance.
+    
+    Returns:
+        Global DatabasePool instance
+    """
+    return db_pool
+
+
 async def init_database() -> None:
     """Initialize the global database pool."""
     config = get_config()

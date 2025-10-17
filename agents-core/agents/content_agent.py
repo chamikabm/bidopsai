@@ -18,8 +18,8 @@ Mode Support:
 import logging
 from typing import Optional, Dict, Any
 
-from agents_core.agents.base_agent import BaseAgent
-from agents_core.agents.knowledge_agent import KnowledgeAgent
+from agents.base_agent import BaseAgent
+from agents.knowledge_agent import KnowledgeAgent
 
 logger = logging.getLogger(__name__)
 

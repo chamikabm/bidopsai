@@ -333,3 +333,43 @@ class SSEEventType:
     
     # Health
     HEARTBEAT = "heartbeat"
+
+
+# Simple event classes for backward compatibility with graph_nodes.py
+class WorkflowCreated(TimestampedModel):
+    """Simple WorkflowCreated event for graph nodes."""
+    workflow_execution_id: str
+    project_id: str
+    total_tasks: int
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AgentHandoff(TimestampedModel):
+    """Simple AgentHandoff event for graph nodes."""
+    from_agent: str
+    to_agent: str
+    agent_task_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AwaitingFeedback(TimestampedModel):
+    """Simple AwaitingFeedback event for graph nodes."""
+    workflow_execution_id: str
+    prompt: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkflowStatusUpdate(TimestampedModel):
+    """Simple WorkflowStatusUpdate event for graph nodes."""
+    workflow_execution_id: str
+    status: str
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkflowCompleted(TimestampedModel):
+    """Simple WorkflowCompleted event for graph nodes."""
+    workflow_execution_id: str
+    status: str
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)

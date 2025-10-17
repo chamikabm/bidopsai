@@ -19,12 +19,12 @@ from typing import Dict, Any, List, Optional, Tuple
 from uuid import UUID
 import io
 
-from agents_core.core.error_handling import AgentError, ErrorCode, ErrorSeverity
-from agents_core.core.observability import log_agent_action
-from agents_core.tools.database.db_tools import (
-    get_artifact_db,
-    get_artifact_latest_version_db,
-    update_artifact_version_db
+from core.error_handling import AgentError, ErrorCode, ErrorSeverity
+from core.observability import log_agent_action
+from tools.database import (
+    get_artifact,
+    get_latest_artifact_version,
+    update_artifact_version
 )
 
 
@@ -114,10 +114,10 @@ class ArtifactExporter:
             S3 URI of exported file
         """
         # Get artifact metadata
-        artifact = await get_artifact_db(artifact_id)
+        artifact = await get_artifact(artifact_id=artifact_id)
         
         # Get latest version
-        version = await get_artifact_latest_version_db(artifact_id)
+        version = await get_latest_artifact_version(artifact_id=artifact_id)
         
         if not version:
             raise AgentError(
@@ -162,9 +162,9 @@ class ArtifactExporter:
         s3_uri = f"s3://{self.bucket_name}/{s3_key}"
         
         # Update artifact version location
-        await update_artifact_version_db(
+        await update_artifact_version(
             version_id=UUID(version["id"]),
-            updates={"location": s3_uri}
+            location=s3_uri
         )
         
         log_agent_action(

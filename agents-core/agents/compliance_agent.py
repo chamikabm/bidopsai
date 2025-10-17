@@ -18,7 +18,7 @@ Mode Support:
 import logging
 from typing import Optional, Dict, Any
 
-from agents_core.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 

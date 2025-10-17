@@ -7,12 +7,33 @@ that correspond to the database schema (workflow_executions, agent_tasks tables)
 
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import Field, field_validator
 
 from .base import IdentifiedModel, TimestampedModel
+
+
+class WorkflowExecutionStatus(str, Enum):
+    """Workflow execution status values."""
+    
+    OPEN = "OPEN"
+    IN_PROGRESS = "INPROGRESS"
+    WAITING = "WAITING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class AgentTaskStatus(str, Enum):
+    """Agent task status values."""
+    
+    OPEN = "OPEN"
+    IN_PROGRESS = "INPROGRESS"
+    WAITING = "WAITING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 
 class WorkflowConfig(TimestampedModel):

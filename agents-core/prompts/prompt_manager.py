@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from agents_core.core.config import get_config
+from core.config import get_config
 
 logger = logging.getLogger(__name__)
 

@@ -10,8 +10,8 @@ allows per-agent customization.
 
 import os
 from typing import Optional, Dict, Any
-from strands_agents import Agent
-from strands_agents.models import (
+from strands import Agent
+from strands.models import (
     BedrockModel,
     OpenAIModel,
     AnthropicModel,

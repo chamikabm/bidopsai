@@ -20,7 +20,8 @@ dependencies = [
     # Core framework - AWS AgentCore SDK
     "bedrock-agentcore>=1.0.0",
     "bedrock-agentcore-starter-toolkit>=0.1.0,<1.0.0",
-    # Note: strands-agents and strands-tools are included in bedrock-agentcore-starter-toolkit
+    # Strands Agent Framework (explicit dependency)
+    "strands-agents>=1.12.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     # Data validation and LLM structured outputs

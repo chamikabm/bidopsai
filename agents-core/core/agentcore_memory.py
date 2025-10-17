@@ -23,7 +23,7 @@ from bedrock_agentcore.memory import MemoryClient
 from bedrock_agentcore.memory.constants import StrategyType
 from botocore.exceptions import ClientError
 
-from agents_core.core.config import get_config
+from core.config import get_config
 
 logger = logging.getLogger(__name__)
 

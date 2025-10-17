@@ -15,15 +15,14 @@ from typing import Any, Callable, Dict, List, Optional, Set
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from agents_core.core.error_handling import (
+from core.error_handling import (
     ErrorCode,
     ErrorSeverity,
-    RecoveryStrategy,
+    ErrorRecoveryStrategy,
     RetryableError,
-    handle_errors,
+    handle_error,
     retry_with_backoff,
 )
-from agents_core.core.observability import trace_operation
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ class ToolDefinition:
         Returns:
             Tool object for Strands Agent
         """
-        from strands_agents import Tool
+        from strands.tools import Tool
         
         return Tool(
             name=self.name,
@@ -250,7 +249,7 @@ class ToolManager:
                 f"MCP client initialization failed: {str(e)}",
                 error_code=ErrorCode.TOOL_INITIALIZATION_ERROR,
                 severity=ErrorSeverity.HIGH,
-                recovery_strategy=RecoveryStrategy.RESET_AND_RETRY,
+                recovery_strategy=ErrorRecoveryStrategy.RESET_AND_RETRY,
                 original_exception=e,
             )
     
@@ -402,7 +401,6 @@ class ToolManager:
         """Get MCP client by name."""
         return self._mcp_clients.get(client_name)
     
-    @trace_operation("tool_execution")
     async def execute_tool(
         self,
         tool_name: str,
@@ -562,7 +560,7 @@ class ToolManager:
                 f"Tool execution timed out after {timeout_seconds}s",
                 error_code=ErrorCode.TOOL_TIMEOUT,
                 severity=ErrorSeverity.HIGH,
-                recovery_strategy=RecoveryStrategy.RESET_AND_RETRY,
+                recovery_strategy=ErrorRecoveryStrategy.RESET_AND_RETRY,
             )
         
         except Exception as e:
@@ -571,7 +569,7 @@ class ToolManager:
                 f"Tool execution failed: {str(e)}",
                 error_code=ErrorCode.TOOL_EXECUTION_ERROR,
                 severity=ErrorSeverity.HIGH,
-                recovery_strategy=RecoveryStrategy.RESET_AND_RETRY,
+                recovery_strategy=ErrorRecoveryStrategy.RESET_AND_RETRY,
                 original_exception=e,
             )
     

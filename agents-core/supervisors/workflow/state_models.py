@@ -11,8 +11,8 @@ from uuid import UUID
 
 from pydantic import Field
 
-from agents_core.models.base import TimestampedModel
-from agents_core.models.workflow_models import (
+from models.base import TimestampedModel
+from models.workflow_models import (
     AgentTask,
     AgentTaskInput,
     AgentTaskOutput,

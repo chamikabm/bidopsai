@@ -5,7 +5,7 @@ Provides centralized model configuration and management across different
 LLM providers (Bedrock, OpenAI, Anthropic, Gemini).
 """
 
-from agents_core.llm.model_factory import (
+from llm.model_factory import (
     ModelFactory,
     create_agent_with_model
 )

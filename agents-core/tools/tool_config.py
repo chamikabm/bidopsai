@@ -8,7 +8,7 @@ with different tool access patterns.
 
 from typing import Dict, List, Set
 
-from agents_core.tools.tool_manager import get_tool_manager
+from tools.tool_manager import get_tool_manager
 
 
 # ==============================================================================
@@ -277,8 +277,8 @@ async def initialize_all_mcp_clients(tool_manager=None):
         tool_manager = get_tool_manager()
     
     # Import MCP initialization functions
-    from agents_core.tools.mcp.slack_mcp import initialize_slack_mcp
-    from agents_core.tools.mcp.bedrock_da_mcp import initialize_bedrock_da_mcp
+    from tools.mcp.slack_mcp import initialize_slack_mcp
+    from tools.mcp.bedrock_da_mcp import initialize_bedrock_da_mcp
     
     # Initialize Slack MCP (via AgentCore Gateway)
     await initialize_slack_mcp()

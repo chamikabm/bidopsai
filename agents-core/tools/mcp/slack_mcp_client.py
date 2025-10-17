@@ -10,9 +10,9 @@ Reference: https://github.com/awslabs/amazon-bedrock-agentcore-samples/tree/main
 import logging
 from typing import Any, Dict, List, Optional
 
-from agents_core.core.config import get_config
-from agents_core.core.error_handling import handle_errors
-from agents_core.core.observability import trace_operation
+from core.config import get_config
+from core.error_handling import handle_errors
+from core.observability import trace_operation
 
 logger = logging.getLogger(__name__)
 

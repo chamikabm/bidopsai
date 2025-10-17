@@ -32,14 +32,14 @@ from datetime import datetime
 import boto3
 from strands import tool
 
-from agents_core.core.config import get_config
-from agents_core.core.error_handling import (
+from core.config import get_config
+from core.error_handling import (
     AgentError,
     ErrorCode,
     ErrorSeverity,
     handle_errors
 )
-from agents_core.core.observability import trace_operation, log_agent_action
+from core.observability import trace_operation, log_agent_action
 
 logger = logging.getLogger(__name__)
 

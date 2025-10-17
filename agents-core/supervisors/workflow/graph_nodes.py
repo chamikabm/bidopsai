@@ -21,30 +21,30 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from uuid import UUID
 
-from agents_core.core.database import get_db_pool
-from agents_core.core.sse_manager import get_sse_manager
-from agents_core.core.error_handling import AgentError, ErrorCode, ErrorSeverity
-from agents_core.core.observability import log_agent_action
-from agents_core.models.workflow_models import WorkflowExecutionStatus
-from agents_core.models.sse_models import (
+from core.database import db_pool
+from core.sse_manager import get_sse_manager
+from core.error_handling import AgentError, ErrorCode, ErrorSeverity
+from core.observability import log_agent_action
+from models.workflow_models import WorkflowExecutionStatus
+from models.sse_models import (
     WorkflowCreated,
     AgentHandoff,
     AwaitingFeedback,
     WorkflowStatusUpdate,
     WorkflowCompleted
 )
-from agents_core.tools.database.db_tools import (
-    create_workflow_execution_db,
-    create_agent_task_db,
-    update_workflow_execution_db,
-    update_agent_task_db,
-    get_next_incomplete_task_db,
-    update_project_db
+from tools.database.db_tools import (
+    create_workflow_execution,
+    create_agent_task,
+    update_workflow_execution,
+    update_agent_task,
+    get_next_incomplete_task,
+    update_project
 )
-from agents_core.tools.storage.artifact_export import export_artifacts
+from tools.storage.artifact_export import ArtifactExporter
 
 # Import OOP agent classes (not factory functions)
-from agents_core.agents import (
+from agents import (
     ParserAgent,
     AnalysisAgent,
     ContentAgent,
@@ -180,6 +180,207 @@ async def _invoke_agent_with_context(
 
 
 # ========================================
+# Supervisor Orchestrator Node
+# ========================================
+
+async def supervisor_node(state: WorkflowGraphState) -> WorkflowGraphState:
+    """
+    Supervisor orchestrator node - analyzes state and decides next action.
+    
+    This is the central orchestrator that:
+    1. Analyzes completed tasks and current workflow state
+    2. Determines the next appropriate action/node
+    3. Handles feedback loops and retries
+    4. Manages workflow progression
+    
+    Decision Logic:
+    - First call: Initialize workflow
+    - After initialize: Start with parser
+    - After parser: Move to analysis
+    - After analysis: Await user feedback
+    - After feedback: Decide reparse/reanalyze/proceed
+    - After content: Check compliance
+    - After compliance: If passed, QA; else retry content
+    - After QA: If passed, await review; else retry content
+    - After review: If approved, export; else retry content
+    - After export: Await comms permission
+    - After comms decision: If yes, run comms; else await submission
+    - After comms: Await submission permission
+    - After submission decision: If yes, run submission; else complete
+    - After submission: Complete workflow
+    
+    Args:
+        state: Current workflow graph state
+        
+    Returns:
+        Updated state with next_node decision
+    """
+    log_agent_action(
+        agent_name=_agent_name,
+        action="supervisor_analyzing_state",
+        details={
+            "workflow_id": str(state.workflow_execution_id) if state.workflow_execution_id else "not_initialized",
+            "completed_tasks": state.completed_tasks,
+            "current_status": state.current_status
+        }
+    )
+    
+    # Determine next node based on workflow state
+    next_node = None
+    reason = ""
+    
+    # Check if workflow needs initialization
+    if not state.workflow_execution_id:
+        next_node = "initialize"
+        reason = "Workflow not initialized yet"
+    
+    # After initialization, start parser
+    elif "initialize" in state.completed_tasks and "parser" not in state.completed_tasks:
+        next_node = "parser"
+        reason = "Workflow initialized, starting parser"
+    
+    # After parser, run analysis
+    elif "parser" in state.completed_tasks and "analysis" not in state.completed_tasks:
+        next_node = "analysis"
+        reason = "Parser completed, starting analysis"
+    
+    # After analysis, await feedback
+    elif "analysis" in state.completed_tasks and not state.awaiting_user_feedback:
+        next_node = "await_analysis_feedback"
+        reason = "Analysis completed, awaiting user feedback"
+    
+    # After feedback, check intent
+    elif state.awaiting_user_feedback and "await_analysis_feedback" in state.completed_tasks:
+        feedback_output = state.task_outputs.get("await_analysis_feedback", {})
+        intent = feedback_output.get("intent", "proceed")
+        
+        if intent == "reparse":
+            # Reset tasks for reparse
+            state.completed_tasks = [t for t in state.completed_tasks if t not in ["parser", "analysis", "await_analysis_feedback"]]
+            next_node = "parser"
+            reason = "User requested reparse"
+        elif intent == "reanalyze":
+            # Reset analysis task
+            state.completed_tasks = [t for t in state.completed_tasks if t not in ["analysis", "await_analysis_feedback"]]
+            next_node = "analysis"
+            reason = "User requested reanalysis"
+        else:
+            next_node = "content"
+            reason = "User approved analysis, proceeding to content"
+            state.awaiting_user_feedback = False
+    
+    # After content, check compliance
+    elif "content" in state.completed_tasks and "compliance" not in state.completed_tasks:
+        next_node = "compliance"
+        reason = "Content completed, checking compliance"
+    
+    # After compliance, check if passed
+    elif "compliance" in state.completed_tasks:
+        compliance_output = state.task_outputs.get("compliance", {})
+        is_compliant = compliance_output.get("is_compliant", False)
+        
+        if not is_compliant and "qa" not in state.completed_tasks:
+            # Reset content and compliance for retry
+            state.completed_tasks = [t for t in state.completed_tasks if t not in ["content", "compliance"]]
+            next_node = "content"
+            reason = "Compliance failed, retrying content"
+        elif "qa" not in state.completed_tasks:
+            next_node = "qa"
+            reason = "Compliance passed, starting QA"
+    
+    # After QA, check if passed
+    elif "qa" in state.completed_tasks and "await_artifact_review" not in state.completed_tasks:
+        qa_output = state.task_outputs.get("qa", {})
+        overall_status = qa_output.get("overall_status", "")
+        
+        if overall_status != "complete":
+            # Reset content, compliance, QA for retry
+            state.completed_tasks = [t for t in state.completed_tasks if t not in ["content", "compliance", "qa"]]
+            next_node = "content"
+            reason = "QA failed, retrying content"
+        else:
+            next_node = "await_artifact_review"
+            reason = "QA passed, awaiting artifact review"
+    
+    # After artifact review, check if approved
+    elif "await_artifact_review" in state.completed_tasks and not state.artifact_export_completed:
+        review_output = state.task_outputs.get("await_artifact_review", {})
+        approved = review_output.get("approved", False)
+        
+        if not approved:
+            # Reset content pipeline for retry
+            state.completed_tasks = [t for t in state.completed_tasks if t not in ["content", "compliance", "qa", "await_artifact_review"]]
+            next_node = "content"
+            reason = "Artifacts not approved, retrying content"
+        else:
+            next_node = "export_artifacts"
+            reason = "Artifacts approved, exporting to S3"
+    
+    # After export, await comms permission
+    elif state.artifact_export_completed and "await_comms_permission" not in state.completed_tasks:
+        next_node = "await_comms_permission"
+        reason = "Artifacts exported, awaiting comms permission"
+    
+    # After comms permission, decide
+    elif "await_comms_permission" in state.completed_tasks and "comms" not in state.completed_tasks:
+        permission_output = state.task_outputs.get("await_comms_permission", {})
+        approved = permission_output.get("approved", False)
+        
+        if approved:
+            next_node = "comms"
+            reason = "Comms approved, sending notifications"
+        else:
+            next_node = "await_submission_permission"
+            reason = "Comms skipped, awaiting submission permission"
+    
+    # After comms, await submission permission
+    elif "comms" in state.completed_tasks and "await_submission_permission" not in state.completed_tasks:
+        next_node = "await_submission_permission"
+        reason = "Comms completed, awaiting submission permission"
+    
+    # After submission permission, decide
+    elif "await_submission_permission" in state.completed_tasks and "submission" not in state.completed_tasks:
+        permission_output = state.task_outputs.get("await_submission_permission", {})
+        approved = permission_output.get("approved", False)
+        
+        if approved:
+            next_node = "submission"
+            reason = "Submission approved, sending bid"
+        else:
+            next_node = "complete"
+            reason = "Submission skipped, completing workflow"
+    
+    # After submission, complete
+    elif "submission" in state.completed_tasks:
+        next_node = "complete"
+        reason = "Submission completed, completing workflow"
+    
+    # Default fallback
+    else:
+        next_node = "complete"
+        reason = "All tasks completed or error state, completing workflow"
+    
+    # Store decision in state
+    state.task_outputs["supervisor"] = {
+        "next_node": next_node,
+        "reason": reason,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    log_agent_action(
+        agent_name=_agent_name,
+        action="supervisor_decision",
+        details={
+            "next_node": next_node,
+            "reason": reason,
+            "completed_tasks": state.completed_tasks
+        }
+    )
+    
+    return state
+
+
+# ========================================
 # Initialization Node
 # ========================================
 
@@ -205,9 +406,10 @@ async def initialize_workflow_node(state: WorkflowGraphState) -> WorkflowGraphSt
     )
     
     # Create workflow execution record
-    workflow_execution = await create_workflow_execution_db(
-        project_id=state.project_id,
-        initiated_by=state.user_id,
+    workflow_execution = await create_workflow_execution(
+        project_id=str(state.project_id),
+        session_id=state.session_id,
+        initiated_by=str(state.user_id),
         workflow_config={"mode": "workflow", "session_id": state.session_id}
     )
     
@@ -225,11 +427,11 @@ async def initialize_workflow_node(state: WorkflowGraphState) -> WorkflowGraphSt
     ]
     
     for agent_name, sequence in agent_sequence:
-        await create_agent_task_db(
-            workflow_execution_id=workflow_id,
+        await create_agent_task(
+            workflow_execution_id=str(workflow_id),
             agent=agent_name,
             sequence_order=sequence,
-            initiated_by=state.user_id
+            initiated_by=str(state.user_id)
         )
     
     # Send workflow created event
@@ -279,8 +481,8 @@ async def parser_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         Updated state with parser output
     """
     # Get parser task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="parser"
     )
     
@@ -294,13 +496,11 @@ async def parser_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
-        agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+    await update_agent_task(
+        task_id=str(task_id),
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow().isoformat(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -328,14 +528,12 @@ async def parser_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         )
         
         # Update task as completed
-        await update_agent_task_db(
-            agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+        await update_agent_task(
+            task_id=str(task_id),
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -344,29 +542,23 @@ async def parser_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         state.current_agent = "parser"
         
         # Update workflow
-        await update_workflow_execution_db(
-            workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+        await update_workflow_execution(
+            workflow_execution_id=str(state.workflow_execution_id)
         )
         
         # Update project progress (10% after parsing)
-        await update_project_db(
-            project_id=state.project_id,
-            updates={
-                "progress_percentage": 10,
-                "updated_at": datetime.utcnow()
-            }
+        await update_project(
+            project_id=str(state.project_id),
+            progress_percentage=10
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
-            agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+        await update_agent_task(
+            task_id=str(task_id),
+            status="FAILED",
+            error_message=str(e),
+            error_log=[{"error": str(e), "type": type(e).__name__}]
         )
         raise
     
@@ -387,8 +579,8 @@ async def analysis_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         Updated state with analysis output
     """
     # Get analysis task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="analysis"
     )
     
@@ -402,13 +594,11 @@ async def analysis_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -440,14 +630,12 @@ async def analysis_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -456,29 +644,25 @@ async def analysis_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         state.current_agent = "analysis"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
         # Update project progress (20% after analysis)
-        await update_project_db(
+        await update_project(
             project_id=state.project_id,
-            updates={
-                "progress_percentage": 20,
-                "updated_at": datetime.utcnow()
-            }
+            progress_percentage=20,
+            updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         raise
     
@@ -499,8 +683,8 @@ async def content_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         Updated state with content output
     """
     # Get content task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="content"
     )
     
@@ -514,13 +698,11 @@ async def content_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -557,14 +739,12 @@ async def content_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -573,29 +753,25 @@ async def content_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         state.current_agent = "content"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
         # Update project progress (40% after content)
-        await update_project_db(
+        await update_project(
             project_id=state.project_id,
-            updates={
-                "progress_percentage": 40,
-                "updated_at": datetime.utcnow()
-            }
+            progress_percentage=40,
+            updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         raise
     
@@ -616,8 +792,8 @@ async def compliance_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         Updated state with compliance output
     """
     # Get compliance task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="compliance"
     )
     
@@ -631,13 +807,11 @@ async def compliance_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -668,14 +842,12 @@ async def compliance_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -684,29 +856,25 @@ async def compliance_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         state.current_agent = "compliance"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
         # Update project progress (60% after compliance)
-        await update_project_db(
+        await update_project(
             project_id=state.project_id,
-            updates={
-                "progress_percentage": 60,
-                "updated_at": datetime.utcnow()
-            }
+            progress_percentage=60,
+            updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         raise
     
@@ -727,8 +895,8 @@ async def qa_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         Updated state with QA output
     """
     # Get QA task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="qa"
     )
     
@@ -742,13 +910,11 @@ async def qa_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -782,14 +948,12 @@ async def qa_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -798,29 +962,25 @@ async def qa_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         state.current_agent = "qa"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
         # Update project progress (70% after QA)
-        await update_project_db(
+        await update_project(
             project_id=state.project_id,
-            updates={
-                "progress_percentage": 70,
-                "updated_at": datetime.utcnow()
-            }
+            progress_percentage=70,
+            updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         raise
     
@@ -841,8 +1001,8 @@ async def comms_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         Updated state with comms output
     """
     # Get comms task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="comms"
     )
     
@@ -856,13 +1016,11 @@ async def comms_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -896,14 +1054,12 @@ async def comms_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -912,29 +1068,25 @@ async def comms_agent_node(state: WorkflowGraphState) -> WorkflowGraphState:
         state.current_agent = "comms"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
         # Update project progress (90% after comms)
-        await update_project_db(
+        await update_project(
             project_id=state.project_id,
-            updates={
-                "progress_percentage": 90,
-                "updated_at": datetime.utcnow()
-            }
+            progress_percentage=90,
+            updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed (but don't fail workflow)
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         # Log but continue - comms is not critical
         log_agent_action(
@@ -961,8 +1113,8 @@ async def submission_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         Updated state with submission output
     """
     # Get submission task
-    task = await get_next_incomplete_task_db(
-        workflow_execution_id=state.workflow_execution_id,
+    task = await get_next_incomplete_task(
+        workflow_execution_id=str(state.workflow_execution_id),
         agent="submission"
     )
     
@@ -976,13 +1128,11 @@ async def submission_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
     task_id = UUID(task["id"])
     
     # Update task to in progress
-    await update_agent_task_db(
+    await update_agent_task(
         agent_task_id=task_id,
-        updates={
-            "status": "IN_PROGRESS",
-            "started_at": datetime.utcnow(),
-            "handled_by": state.user_id
-        }
+        status="IN_PROGRESS",
+        started_at=datetime.utcnow(),
+        handled_by=str(state.user_id)
     )
     
     # Send handoff event
@@ -1017,14 +1167,12 @@ async def submission_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         )
         
         # Update task as completed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "COMPLETED",
-                "output_data": output,
-                "completed_at": datetime.utcnow(),
-                "completed_by": state.user_id
-            }
+            status="COMPLETED",
+            output_data=output,
+            completed_at=datetime.utcnow().isoformat(),
+            completed_by=str(state.user_id)
         )
         
         # Update state
@@ -1033,20 +1181,18 @@ async def submission_agent_node(state: WorkflowGraphState) -> WorkflowGraphState
         state.current_agent = "submission"
         
         # Update workflow
-        await update_workflow_execution_db(
+        await update_workflow_execution(
             workflow_execution_id=state.workflow_execution_id,
-            updates={"last_updated_at": datetime.utcnow()}
+            last_updated_at=datetime.utcnow().isoformat()
         )
         
     except Exception as e:
         # Update task as failed
-        await update_agent_task_db(
+        await update_agent_task(
             agent_task_id=task_id,
-            updates={
-                "status": "FAILED",
-                "error_message": str(e),
-                "error_log": {"error": str(e), "type": type(e).__name__}
-            }
+            status="FAILED",
+            error_message=str(e),
+            error_log={"error": str(e), "type": type(e).__name__}
         )
         raise
     
@@ -1070,12 +1216,10 @@ async def await_analysis_feedback_node(state: WorkflowGraphState) -> WorkflowGra
         Updated state with awaiting_feedback=True
     """
     # Update workflow to waiting status
-    await update_workflow_execution_db(
+    await update_workflow_execution(
         workflow_execution_id=state.workflow_execution_id,
-        updates={
-            "status": WorkflowExecutionStatus.WAITING.value,
-            "last_updated_at": datetime.utcnow()
-        }
+        status=WorkflowExecutionStatus.WAITING.value,
+        last_updated_at=datetime.utcnow().isoformat()
     )
     
     # Send awaiting feedback event
@@ -1114,12 +1258,10 @@ async def await_artifact_review_node(state: WorkflowGraphState) -> WorkflowGraph
         Updated state with awaiting_feedback=True
     """
     # Update workflow to waiting status
-    await update_workflow_execution_db(
+    await update_workflow_execution(
         workflow_execution_id=state.workflow_execution_id,
-        updates={
-            "status": WorkflowExecutionStatus.WAITING.value,
-            "last_updated_at": datetime.utcnow()
-        }
+        status=WorkflowExecutionStatus.WAITING.value,
+        last_updated_at=datetime.utcnow().isoformat()
     )
     
     # Send awaiting feedback event with artifacts
@@ -1156,12 +1298,10 @@ async def await_comms_permission_node(state: WorkflowGraphState) -> WorkflowGrap
         Updated state awaiting comms permission
     """
     # Update workflow to waiting status
-    await update_workflow_execution_db(
+    await update_workflow_execution(
         workflow_execution_id=state.workflow_execution_id,
-        updates={
-            "status": WorkflowExecutionStatus.WAITING.value,
-            "last_updated_at": datetime.utcnow()
-        }
+        status=WorkflowExecutionStatus.WAITING.value,
+        last_updated_at=datetime.utcnow().isoformat()
     )
     
     # Send awaiting feedback event
@@ -1192,12 +1332,10 @@ async def await_submission_permission_node(state: WorkflowGraphState) -> Workflo
         Updated state awaiting submission permission
     """
     # Update workflow to waiting status
-    await update_workflow_execution_db(
+    await update_workflow_execution(
         workflow_execution_id=state.workflow_execution_id,
-        updates={
-            "status": WorkflowExecutionStatus.WAITING.value,
-            "last_updated_at": datetime.utcnow()
-        }
+        status=WorkflowExecutionStatus.WAITING.value,
+        last_updated_at=datetime.utcnow().isoformat()
     )
     
     # Send awaiting feedback event
@@ -1334,26 +1472,22 @@ async def complete_workflow_node(state: WorkflowGraphState) -> WorkflowGraphStat
         Updated state with workflow_status=COMPLETED
     """
     # Update workflow status
-    await update_workflow_execution_db(
+    await update_workflow_execution(
         workflow_execution_id=state.workflow_execution_id,
-        updates={
-            "status": WorkflowExecutionStatus.COMPLETED.value,
-            "completed_by": state.user_id,
-            "completed_at": datetime.utcnow(),
-            "last_updated_at": datetime.utcnow()
-        }
+        status=WorkflowExecutionStatus.COMPLETED.value,
+        completed_by=str(state.user_id),
+        completed_at=datetime.utcnow().isoformat(),
+        last_updated_at=datetime.utcnow().isoformat()
     )
     
     # Update project status (100% complete)
-    await update_project_db(
+    await update_project(
         project_id=state.project_id,
-        updates={
-            "status": "COMPLETED",
-            "progress_percentage": 100,
-            "completed_by": state.user_id,
-            "completed_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
+        status="COMPLETED",
+        progress_percentage=100,
+        completed_by=str(state.user_id),
+        completed_at=datetime.utcnow().isoformat(),
+        updated_at=datetime.utcnow().isoformat()
     )
     
     # Send completion event

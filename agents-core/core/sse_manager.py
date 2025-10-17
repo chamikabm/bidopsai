@@ -334,6 +334,16 @@ class SSEManager:
 sse_manager = SSEManager()
 
 
+def get_sse_manager() -> SSEManager:
+    """
+    Get the global SSE manager instance.
+    
+    Returns:
+        Global SSEManager instance
+    """
+    return sse_manager
+
+
 def create_sse_response(session_id: str, last_event_id: Optional[str] = None) -> EventSourceResponse:
     """
     Create SSE response for FastAPI endpoint.

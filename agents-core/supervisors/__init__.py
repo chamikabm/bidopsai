@@ -6,12 +6,11 @@ This package contains supervisor agents that orchestrate workflows:
 - AI Assistant Supervisor: Conversational AI assistant (Intent Router)
 """
 
-from agents_core.supervisors.workflow_supervisor import (
-    WorkflowSupervisor,
-    create_workflow_supervisor
-)
+from supervisors.workflow.agent_builder import build_workflow_graph, get_workflow_graph
+from supervisors.workflow.agent_executor import app as workflow_app
 
 __all__ = [
-    "WorkflowSupervisor",
-    "create_workflow_supervisor",
+    "build_workflow_graph",
+    "get_workflow_graph",
+    "workflow_app",
 ]

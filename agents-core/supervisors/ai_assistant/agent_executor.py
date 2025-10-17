@@ -33,24 +33,24 @@ from uuid import UUID, uuid4
 from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 from pydantic import BaseModel, Field
 
-from agents_core.core.config import get_config
-from agents_core.core.conversation_manager import ConversationManager
-from agents_core.core.memory_manager import get_memory_manager
-from agents_core.core.database import get_db_pool, close_db_pool
-from agents_core.core.error_handling import AgentError, ErrorCode, ErrorSeverity
-from agents_core.core.observability import (
+from core.config import get_config
+from core.conversation_manager import ConversationManager
+from core.memory_manager import get_memory_manager
+from core.database import init_database, close_database, db_pool
+from core.error_handling import AgentError, ErrorCode, ErrorSeverity
+from core.observability import (
     log_agent_action,
     initialize_observability,
     track_agent_performance,
     get_observability_manager
 )
-from agents_core.models.request_models import InvocationRequest
-from supervisors.ai_assistant.ai_assistant_supervisor import AIAssistantSupervisor
+from models.request_models import InvocationRequest
 from supervisors.ai_assistant.state_models import (
     IntentRouterState,
     ConversationContext,
 )
-from agents_core.tools.tool_config import configure_all_tools
+from supervisors.ai_assistant.agent_builder import build_ai_assistant_graph
+from tools.tool_config import configure_all_tools
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -62,9 +62,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 
 app = BedrockAgentCoreApp(
-    name="BidOpsAI AI Assistant",
-    description="Intent-based conversational agent for bid management",
-    version="1.0.0"
+    debug=get_config().environment == "development"
 )
 
 
@@ -95,10 +93,10 @@ async def startup_event():
     
     try:
         # Initialize core services
-        await get_db_pool()
+        await init_database()
         
         # Initialize AgentCore Memory System
-        from agents_core.core.agentcore_memory import initialize_agentcore_memory
+        from core.agentcore_memory import initialize_agentcore_memory
         memory_id = await initialize_agentcore_memory()
         log_agent_action(
             agent_name="ai_assistant_executor",
@@ -152,7 +150,7 @@ async def shutdown_event():
     
     try:
         # Close database pool
-        await close_db_pool()
+        await close_database()
         
         log_agent_action(
             agent_name="ai_assistant_executor",
@@ -174,7 +172,7 @@ async def shutdown_event():
 # Health Check Endpoint
 # ========================================
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 async def health_check():
     """
     Health check endpoint.
@@ -188,8 +186,7 @@ async def health_check():
     """
     try:
         # Check database
-        db_pool = await get_db_pool()
-        db_healthy = db_pool is not None
+        db_healthy = db_pool.is_initialized
         
         # Check memory manager
         memory_manager = get_memory_manager()
@@ -220,7 +217,7 @@ async def health_check():
 # Main AI Assistant Invocation Entrypoint
 # ========================================
 
-@app.entrypoint()
+@app.entrypoint
 @track_agent_performance(agent_name="ai_assistant_executor")
 async def invoke_ai_assistant(
     request: InvocationRequest,
@@ -305,18 +302,12 @@ async def invoke_ai_assistant(
                 content=user_query
             )
         
-        # Create supervisor instance
-        supervisor = AIAssistantSupervisor(
-            cognito_jwt=context.metadata.get("jwt_token") if context.metadata else None
-        )
-        
         # Execute AI Assistant with real-time streaming
         final_response = None
         final_agent = None
         final_metadata = {}
         
         async for event in _execute_ai_assistant_with_streaming(
-            supervisor=supervisor,
             user_query=user_query,
             conversation_context=conversation_context,
             conversation_id=conversation_id,
@@ -409,7 +400,7 @@ async def _load_conversation_context(
         ConversationContext with user preferences and history
     """
     try:
-        from agents_core.core.memory_manager import load_session_context
+        from core.memory_manager import load_session_context
         
         # Load session context using RequestContext-compatible helper
         session_data = await load_session_context(
@@ -455,7 +446,6 @@ async def _load_conversation_context(
 
 
 async def _execute_ai_assistant_with_streaming(
-    supervisor: AIAssistantSupervisor,
     user_query: str,
     conversation_context: ConversationContext,
     conversation_id: UUID,
@@ -498,8 +488,8 @@ async def _execute_ai_assistant_with_streaming(
             conversation_context=conversation_context
         )
         
-        # Get compiled graph
-        graph = supervisor.get_graph()
+        # Get compiled graph from builder
+        graph = build_ai_assistant_graph()
         
         # Configure graph
         config = {
@@ -661,7 +651,7 @@ async def _persist_session_context(
         final_state: Final state from execution
     """
     try:
-        from agents_core.core.memory_manager import update_session_context
+        from core.memory_manager import update_session_context
         
         # Prepare session updates
         session_updates = {

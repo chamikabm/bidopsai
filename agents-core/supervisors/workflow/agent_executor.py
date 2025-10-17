@@ -39,29 +39,27 @@ from uuid import UUID
 from bedrock_agentcore import BedrockAgentCoreApp, RequestContext
 from pydantic import BaseModel, Field
 
-from agents_core.core.database import get_db_pool, close_db_pool
-from agents_core.core.memory_manager import get_memory_manager
-from agents_core.core.conversation_manager import add_user_input, add_sse_event
-from agents_core.core.config import get_config
-from agents_core.core.error_handling import (
+from core.database import init_database, close_database, db_pool
+from core.memory_manager import get_memory_manager
+from core.conversation_manager import add_user_input, add_sse_event
+from core.config import get_config
+from core.error_handling import (
     AgentError,
     ErrorCode,
-    ErrorSeverity,
-    format_error_response
+    ErrorSeverity
 )
-from agents_core.core.observability import (
+from core.observability import (
     log_agent_action,
     initialize_observability,
     track_agent_performance,
     get_observability_manager
 )
-from agents_core.models.request_models import (
-    AgentCoreInvocationRequest,
-    AgentCoreInvocationResponse
+from models.request_models import (
+    InvocationRequest,
+    InvocationResponse
 )
-from agents_core.models.workflow_models import WorkflowExecutionStatus
-from agents_core.tools.tool_config import configure_all_tools
-from supervisors.workflow.workflow_supervisor import WorkflowSupervisor
+from models.workflow_models import WorkflowExecutionStatus
+from tools.tool_config import configure_all_tools
 from supervisors.workflow.state_models import WorkflowGraphState
 
 
@@ -70,9 +68,7 @@ from supervisors.workflow.state_models import WorkflowGraphState
 # ========================================
 
 app = BedrockAgentCoreApp(
-    name="BidOpsAI Workflow Agent",
-    description="AWS AgentCore Workflow Supervisor for automated bid processing",
-    version="1.0.0"
+    debug=get_config().environment == "development"
 )
 
 
@@ -100,10 +96,10 @@ async def startup_event():
     
     try:
         # Initialize core services
-        await get_db_pool()  # Creates singleton database pool
+        await init_database()  # Creates singleton database pool
         
         # Initialize AgentCore Memory System
-        from agents_core.core.agentcore_memory import initialize_agentcore_memory
+        from core.agentcore_memory import initialize_agentcore_memory
         memory_id = await initialize_agentcore_memory()
         log_agent_action(
             agent_name="workflow_executor",
@@ -153,7 +149,7 @@ async def shutdown_event():
     
     try:
         # Close database pool
-        await close_db_pool()
+        await close_database()
         
         log_agent_action(
             agent_name="workflow_executor",
@@ -173,7 +169,7 @@ async def shutdown_event():
 # Health Check Endpoint
 # ========================================
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 async def health_check():
     """
     Health check endpoint.
@@ -187,8 +183,7 @@ async def health_check():
     """
     try:
         # Check database
-        db_pool = await get_db_pool()
-        db_healthy = db_pool is not None
+        db_healthy = db_pool.is_initialized
         
         # Check memory manager
         memory_manager = get_memory_manager()
@@ -218,10 +213,10 @@ async def health_check():
 # Main Agent Invocation Entrypoint
 # ========================================
 
-@app.entrypoint()
+@app.entrypoint
 @track_agent_performance(agent_name="workflow_executor")
 async def invoke_workflow(
-    request: AgentCoreInvocationRequest,
+    request: InvocationRequest,
     context: RequestContext
 ):
     """
@@ -235,7 +230,7 @@ async def invoke_workflow(
     2. Resumption (request.start=False): Loads from memory, applies user input, resumes
     
     Args:
-        request: AgentCoreInvocationRequest with:
+        request: InvocationRequest with:
             - project_id: UUID of the project
             - user_id: UUID of the requesting user
             - session_id: Session ID for memory and streaming
@@ -285,12 +280,8 @@ async def invoke_workflow(
         if request.user_input:
             await _persist_user_input(request)
         
-        # Create supervisor instance
-        supervisor = WorkflowSupervisor()
-        
         # Execute workflow with streaming - yield events in real-time
         async for event in _execute_workflow_with_streaming(
-            supervisor=supervisor,
             request=request,
             context=context
         ):
@@ -329,7 +320,7 @@ async def invoke_workflow(
 # Helper Functions - Validation
 # ========================================
 
-def _validate_invocation_request(request: AgentCoreInvocationRequest) -> None:
+def _validate_invocation_request(request: InvocationRequest) -> None:
     """
     Validate invocation request parameters.
     
@@ -361,7 +352,7 @@ def _validate_invocation_request(request: AgentCoreInvocationRequest) -> None:
         )
 
 
-async def _persist_user_input(request: AgentCoreInvocationRequest) -> None:
+async def _persist_user_input(request: InvocationRequest) -> None:
     """
     Persist user input to conversation history.
     
@@ -404,19 +395,17 @@ async def _persist_user_input(request: AgentCoreInvocationRequest) -> None:
 # ========================================
 
 async def _execute_workflow_with_streaming(
-    supervisor: WorkflowSupervisor,
-    request: AgentCoreInvocationRequest,
+    request: InvocationRequest,
     context: RequestContext
 ) -> Dict[str, Any]:
     """
-    Execute workflow using WorkflowSupervisor with native AgentCore streaming.
+    Execute workflow using Strands GraphBuilder with native AgentCore streaming.
     
     Handles two execution modes:
     1. Initial start (request.start=True): Create new workflow, initialize state
     2. Resumption (request.start=False): Load from memory, apply user input, resume
     
     Args:
-        supervisor: WorkflowSupervisor instance
         request: Invocation request
         context: RequestContext from AgentCore
         
@@ -448,10 +437,11 @@ async def _execute_workflow_with_streaming(
             state = _create_initial_state(request)
         else:
             # RESUMPTION: Load from memory and update
-            state = await _load_and_update_state(supervisor, request, context)
+            state = await _load_and_update_state(request, context)
         
-        # Get the compiled graph
-        graph = supervisor.get_graph()
+        # Get the compiled graph directly from builder
+        from supervisors.workflow.agent_builder import build_workflow_graph
+        graph = build_workflow_graph()
         
         # Configure graph with session/thread ID
         config = {
@@ -581,7 +571,7 @@ async def _execute_workflow_with_streaming(
         )
 
 
-def _create_initial_state(request: AgentCoreInvocationRequest) -> WorkflowGraphState:
+def _create_initial_state(request: InvocationRequest) -> WorkflowGraphState:
     """
     Create initial state for new workflow execution.
     
@@ -630,8 +620,7 @@ def _create_initial_state(request: AgentCoreInvocationRequest) -> WorkflowGraphS
 
 
 async def _load_and_update_state(
-    supervisor: WorkflowSupervisor,
-    request: AgentCoreInvocationRequest,
+    request: InvocationRequest,
     context: RequestContext
 ) -> WorkflowGraphState:
     """
@@ -641,7 +630,6 @@ async def _load_and_update_state(
     enabling proper workflow resumption and multi-turn interactions.
     
     Args:
-        supervisor: WorkflowSupervisor instance
         request: Invocation request with session_id
         context: RequestContext from AgentCore
         
@@ -662,8 +650,9 @@ async def _load_and_update_state(
     )
     
     try:
-        # Get compiled graph
-        graph = supervisor.get_graph()
+        # Get compiled graph directly from builder
+        from supervisors.workflow.agent_builder import build_workflow_graph
+        graph = build_workflow_graph()
         
         # Load checkpoint state from AgentCore Memory
         config = {"configurable": {"thread_id": request.session_id}}
@@ -785,7 +774,7 @@ async def _load_state_from_session_memory(
         WorkflowGraphState or None
     """
     try:
-        from agents_core.core.memory_manager import load_session_context
+        from core.memory_manager import load_session_context
         
         session_data = await load_session_context(session_id, user_id)
         
@@ -820,18 +809,16 @@ async def _persist_state_to_session_memory(
         state: Workflow state to persist
     """
     try:
-        from agents_core.core.memory_manager import update_session_context
+        from core.memory_manager import update_session_context
         
         await update_session_context(
             session_id=session_id,
             user_id=user_id,
-            updates={
-                "workflow_state": state,
-                "workflow_execution_id": str(state.workflow_execution_id),
-                "current_agent": state.current_agent,
-                "current_status": state.current_status,
-                "last_updated": datetime.utcnow().isoformat()
-            }
+            workflow_state=state,
+            workflow_execution_id=str(state.workflow_execution_id),
+            current_agent=state.current_agent,
+            current_status=state.current_status,
+            last_updated=datetime.utcnow().isoformat()
         )
         
         log_agent_action(

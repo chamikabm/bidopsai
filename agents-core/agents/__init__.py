@@ -31,21 +31,21 @@ Usage (Java-style instantiation):
 """
 
 # Base agent abstract class
-from agents_core.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 # Supervisor agents (two separate files)
-from agents_core.agents.workflow_supervisor import WorkflowSupervisor
-from agents_core.agents.ai_assistant_supervisor import AIAssistantSupervisor
+from agents.workflow_supervisor import WorkflowSupervisor
+from agents.ai_assistant_supervisor import AIAssistantSupervisor
 
 # Sub-agents (domain specialists)
-from agents_core.agents.parser_agent import ParserAgent
-from agents_core.agents.analysis_agent import AnalysisAgent
-from agents_core.agents.knowledge_agent import KnowledgeAgent
-from agents_core.agents.content_agent import ContentAgent
-from agents_core.agents.compliance_agent import ComplianceAgent
-from agents_core.agents.qa_agent import QAAgent
-from agents_core.agents.comms_agent import CommsAgent
-from agents_core.agents.submission_agent import SubmissionAgent
+from agents.parser_agent import ParserAgent
+from agents.analysis_agent import AnalysisAgent
+from agents.knowledge_agent import KnowledgeAgent
+from agents.content_agent import ContentAgent
+from agents.compliance_agent import ComplianceAgent
+from agents.qa_agent import QAAgent
+from agents.comms_agent import CommsAgent
+from agents.submission_agent import SubmissionAgent
 
 __all__ = [
     # Base class

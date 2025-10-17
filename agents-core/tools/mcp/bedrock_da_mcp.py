@@ -22,8 +22,8 @@ Reference:
 
 Usage:
     ```python
-    from agents_core.tools.mcp.bedrock_da_mcp import initialize_bedrock_da_mcp
-    from agents_core.tools.tool_manager import get_tool_manager
+    from tools.mcp.bedrock_da_mcp import initialize_bedrock_da_mcp
+    from tools.tool_manager import get_tool_manager
     
     # Initialize Bedrock DA MCP client
     await initialize_bedrock_da_mcp()
@@ -40,10 +40,10 @@ from typing import Optional
 
 from mcp import StdioServerParameters
 
-from agents_core.core.config import get_config
-from agents_core.core.error_handling import AgentError, ErrorCode, ErrorSeverity
-from agents_core.core.observability import log_agent_action
-from agents_core.tools.tool_manager import get_tool_manager
+from core.config import get_config
+from core.error_handling import AgentError, ErrorCode, ErrorSeverity
+from core.observability import log_agent_action
+from tools.tool_manager import get_tool_manager
 
 logger = logging.getLogger(__name__)
 

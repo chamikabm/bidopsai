@@ -1,18 +1,22 @@
 """
-AI Assistant Agent Builder
+AI Assistant Agent Builder - Pure Strands GraphBuilder Pattern
 
-Builds Intent Router graph using Strands StateGraph.
+Builds Intent Router graph using Strands GraphBuilder.
 Routes classified intents to appropriate sub-agents with mode="ai_assistant".
+
+CRITICAL: This uses PURE Strands GraphBuilder pattern - NO LangGraph!
 """
 
 import logging
 from typing import Dict
+from strands.multiagent import GraphBuilder
+from strands import Agent
 
-from strands_agents import StateGraph, END
-
-from agents.analysis_agent import create_analysis_agent
-from agents.content_agent import create_content_agent
-from agents.knowledge_agent import create_knowledge_agent
+from agents import (
+    AnalysisAgent,
+    ContentAgent,
+    KnowledgeAgent
+)
 from core.config import get_config
 from prompts.prompt_manager import PromptManager
 from supervisors.ai_assistant.intent_classifier import (
@@ -21,7 +25,6 @@ from supervisors.ai_assistant.intent_classifier import (
     validate_context_availability,
 )
 from supervisors.ai_assistant.state_models import (
-    IntentRouterState,
     IntentType,
     INTENT_ROUTES,
 )
@@ -49,203 +52,38 @@ async def initialize_managers(cognito_jwt: str = None):
         logger.info("PromptManager initialized for AI Assistant")
 
 
-# Graph node functions
-async def classify_intent_node(state: IntentRouterState) -> IntentRouterState:
+def _should_retry(state) -> bool:
     """
-    Node 1: Classify user query into intent type
+    Conditional edge: Check if should retry classification.
     
-    Uses LLM to determine user intent and extract entities.
-    """
-    try:
-        logger.info(f"Classifying intent for query: {state.user_query[:100]}...")
-        
-        # Prepare context for classification
-        context = {
-            "project_id": str(state.conversation_context.project_id) if state.conversation_context.project_id else None,
-            "project_name": state.conversation_context.user_preferences.get("active_project_name"),
-            "workflow_id": str(state.conversation_context.active_workflow_id) if state.conversation_context.active_workflow_id else None,
-        }
-        
-        # Classify intent
-        classification = await classify_intent(
-            user_query=state.user_query,
-            context=context
-        )
-        
-        state.classified_intent = classification
-        
-        # Check if required context is available
-        if not validate_context_availability(classification, context):
-            # Need to ask user for more context
-            state.classified_intent.intent = IntentType.CLARIFICATION_NEEDED
-            state.classified_intent.reasoning = "Required context not available"
-        
-        logger.info(
-            f"Intent classified: {classification.intent} "
-            f"(confidence: {classification.confidence:.2f})"
-        )
-        
-        return state
-        
-    except Exception as e:
-        logger.error(f"Error classifying intent: {e}")
-        state.errors.append(f"Intent classification failed: {str(e)}")
-        # Default to general question on error
-        state.classified_intent = IntentClassification(
-            intent=IntentType.GENERAL_QUESTION,
-            confidence=0.3,
-            entities={},
-            reasoning=f"Error: {str(e)}",
-            requires_context=False
-        )
-        return state
-
-
-async def route_to_agent_node(state: IntentRouterState) -> IntentRouterState:
-    """
-    Node 2: Route to appropriate agent based on intent
+    Strands pattern: Check state.results for error conditions.
     
-    Selects agent and tools from INTENT_ROUTES configuration.
-    Creates agent instance with mode="ai_assistant".
-    """
-    try:
-        intent = state.classified_intent.intent
+    Args:
+        state: Strands graph state
         
-        # Handle clarification needed
-        if intent == IntentType.CLARIFICATION_NEEDED:
-            state.agent_response = get_clarification_prompt(state.user_query)
-            state.response_metadata["needs_clarification"] = True
-            return state
-        
-        # Get route configuration for intent
-        route_config = INTENT_ROUTES.get(intent)
-        if not route_config:
-            logger.warning(f"No route configured for intent: {intent}")
-            state.errors.append(f"No route for intent: {intent}")
-            state.agent_response = (
-                "I'm not sure how to handle that request yet. "
-                "Could you rephrase or try a different question?"
-            )
-            return state
-        
-        state.selected_agent = route_config.agent_name
-        state.agent_tools = route_config.tools
-        
-        logger.info(
-            f"Routing to agent: {route_config.agent_name} "
-            f"with {len(route_config.tools)} tools"
-        )
-        
-        # Get tools for agent
-        agent_tools = _tool_manager.get_tools_for_agent(
-            route_config.agent_name,
-            mode="ai_assistant"
-        )
-        
-        # Get prompt for agent
-        system_prompt = _prompt_manager.get_prompt(
-            agent_name=route_config.agent_name,
-            mode="ai_assistant"
-        )
-        
-        # Create agent based on type
-        config = get_config()
-        
-        if route_config.agent_name == "analysis":
-            agent = await create_analysis_agent(
-                mode="ai_assistant",
-                provider=config.default_llm_provider,
-                model_id=config.default_model,
-                tools=agent_tools,
-                system_prompt=system_prompt,
-                temperature=route_config.temperature,
-                max_tokens=route_config.max_tokens
-            )
-        elif route_config.agent_name == "knowledge":
-            agent = await create_knowledge_agent(
-                mode="ai_assistant",
-                provider=config.default_llm_provider,
-                model_id=config.default_model,
-                tools=agent_tools,
-                system_prompt=system_prompt,
-                temperature=route_config.temperature,
-                max_tokens=route_config.max_tokens
-            )
-        elif route_config.agent_name == "content":
-            agent = await create_content_agent(
-                mode="ai_assistant",
-                provider=config.default_llm_provider,
-                model_id=config.default_model,
-                tools=agent_tools,
-                system_prompt=system_prompt,
-                temperature=route_config.temperature,
-                max_tokens=route_config.max_tokens
-            )
-        else:
-            # Generic agent for general questions
-            from strands_agents import Agent
-            agent = Agent(
-                name=route_config.agent_name,
-                model=config.default_model,
-                tools=agent_tools,
-                system_prompt=system_prompt,
-                temperature=route_config.temperature,
-                max_tokens=route_config.max_tokens
-            )
-        
-        # Invoke agent with user query
-        logger.info(f"Invoking {route_config.agent_name} agent...")
-        
-        # Prepare input with conversation context
-        agent_input = {
-            "query": state.user_query,
-            "user_id": str(state.conversation_context.user_id),
-            "project_id": str(state.conversation_context.project_id) if state.conversation_context.project_id else None,
-            "entities": state.classified_intent.entities,
-        }
-        
-        # Invoke agent (streaming response)
-        response = await agent.ainvoke(agent_input)
-        
-        state.agent_response = response.get("output", response.get("response", ""))
-        state.response_metadata = {
-            "agent_name": route_config.agent_name,
-            "intent": intent.value,
-            "confidence": state.classified_intent.confidence,
-            "tools_used": response.get("tools_used", []),
-        }
-        
-        logger.info(f"Agent response generated ({len(state.agent_response)} chars)")
-        
-        return state
-        
-    except Exception as e:
-        logger.error(f"Error routing to agent: {e}", exc_info=True)
-        state.errors.append(f"Agent execution failed: {str(e)}")
-        state.agent_response = (
-            "I encountered an error while processing your request. "
-            "Please try again or rephrase your question."
-        )
-        return state
-
-
-def should_retry(state: IntentRouterState) -> str:
-    """
-    Conditional edge: Check if we should retry or end
-    
     Returns:
-        "retry" if errors and retries available, "end" otherwise
+        True if should retry, False otherwise
     """
-    if state.errors and state.retry_count < 2:
-        return "retry"
-    return "end"
-
-
-def build_ai_assistant_graph(cognito_jwt: str = None) -> StateGraph:
-    """
-    Build AI Assistant Intent Router graph
+    # Get routing result
+    route_result = state.results.get("route_to_agent")
+    if not route_result:
+        return False
     
-    Graph structure:
+    # Extract result data
+    result_data = route_result.result if hasattr(route_result, "result") else {}
+    if isinstance(result_data, dict):
+        has_errors = result_data.get("has_errors", False)
+        retry_count = result_data.get("retry_count", 0)
+        return has_errors and retry_count < 2
+    
+    return False
+
+
+def build_ai_assistant_graph(cognito_jwt: str = None):
+    """
+    Build AI Assistant Intent Router graph using pure Strands GraphBuilder.
+    
+    Graph structure (Pure Strands Pattern):
     START -> classify_intent -> route_to_agent -> END
                                       |
                                   (on error)
@@ -256,36 +94,113 @@ def build_ai_assistant_graph(cognito_jwt: str = None) -> StateGraph:
         cognito_jwt: User JWT token for AgentCore Gateway authentication
     
     Returns:
-        Compiled StateGraph ready for execution
+        Compiled Strands Graph ready for execution
     """
     # Initialize managers
     import asyncio
-    asyncio.create_task(initialize_managers(cognito_jwt))
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(initialize_managers(cognito_jwt))
+        else:
+            loop.run_until_complete(initialize_managers(cognito_jwt))
+    except RuntimeError:
+        # No event loop, will be initialized on first use
+        pass
     
-    # Create graph
-    graph = StateGraph(IntentRouterState)
+    # Initialize GraphBuilder (Pure Strands)
+    builder = GraphBuilder()
     
-    # Add nodes
-    graph.add_node("classify_intent", classify_intent_node)
-    graph.add_node("route_to_agent", route_to_agent_node)
+    # ========================================
+    # Create Agent Instances
+    # ========================================
     
-    # Add edges
-    graph.set_entry_point("classify_intent")
-    graph.add_edge("classify_intent", "route_to_agent")
-    
-    # Conditional edge for retry
-    graph.add_conditional_edges(
-        "route_to_agent",
-        should_retry,
-        {
-            "retry": "classify_intent",  # Loop back to reclassify
-            "end": END
-        }
+    # Classifier agent - Determines user intent
+    classifier_agent = Agent(
+        name="intent_classifier",
+        system_prompt="""You are an intent classification agent for an AI assistant.
+        
+Your task is to analyze user queries and classify them into one of these intents:
+- ANALYSIS_QUESTION: Questions about project analysis, documents, or RFP requirements
+- CONTENT_QUESTION: Questions about generating or editing content/artifacts
+- KNOWLEDGE_QUESTION: Questions about past bids, company knowledge, or Q&A history
+- GENERAL_QUESTION: General questions or chitchat
+- CLARIFICATION_NEEDED: When context is missing or query is unclear
+
+Return your classification as JSON:
+{
+    "intent": "<intent_type>",
+    "confidence": <0.0-1.0>,
+    "entities": {"key": "value"},
+    "reasoning": "explanation",
+    "requires_context": true/false
+}"""
     )
     
-    # Compile graph
-    compiled_graph = graph.compile()
+    # Router agent - Routes to appropriate sub-agent
+    router_agent = Agent(
+        name="intent_router",
+        system_prompt="""You are a routing agent for an AI assistant.
+
+Based on the classified intent, you route queries to specialized agents:
+- Analysis queries → AnalysisAgent
+- Content queries → ContentAgent  
+- Knowledge queries → KnowledgeAgent
+- General queries → Handle directly
+
+You coordinate execution and return the final response to the user.
+
+Return responses as JSON:
+{
+    "response": "agent response text",
+    "agent_name": "agent_used",
+    "has_errors": false,
+    "retry_count": 0
+}"""
+    )
     
-    logger.info("AI Assistant Intent Router graph compiled successfully")
+    # ========================================
+    # Add Nodes (Pure Strands Pattern)
+    # ========================================
     
-    return compiled_graph
+    builder.add_node(classifier_agent, "classify_intent")
+    builder.add_node(router_agent, "route_to_agent")
+    
+    # ========================================
+    # Set Entry Point
+    # ========================================
+    
+    builder.set_entry_point("classify_intent")
+    
+    # ========================================
+    # Add Edges (Pure Strands Pattern)
+    # ========================================
+    
+    # Sequential: classify → route
+    builder.add_edge("classify_intent", "route_to_agent")
+    
+    # Conditional: retry on error
+    builder.add_edge("route_to_agent", "classify_intent", condition=_should_retry)
+    
+    # ========================================
+    # Build Graph
+    # ========================================
+    
+    graph = builder.build()
+    
+    logger.info("AI Assistant Intent Router graph compiled successfully (Pure Strands)")
+    
+    return graph
+
+
+def get_ai_assistant_graph(cognito_jwt: str = None):
+    """
+    Get compiled AI Assistant graph (singleton pattern).
+    
+    Args:
+        cognito_jwt: User JWT token
+        
+    Returns:
+        Compiled Strands Graph instance
+    """
+    return build_ai_assistant_graph(cognito_jwt)
