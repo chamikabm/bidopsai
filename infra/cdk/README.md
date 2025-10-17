@@ -1,28 +1,62 @@
-# BidOps.AI CDK Infrastructure
+# BidOps AI - AWS CDK Infrastructure
 
-AWS CDK infrastructure for BidOps.AI platform. Includes:
-- **Cognito User Pool**: Authentication and authorization with RBAC
-- **S3 Buckets**: Document storage and artifact management
+This directory contains the AWS CDK infrastructure code for deploying the BidOps AI agentic system.
+
+## Overview
+
+The infrastructure is organized into multiple stacks for modularity and independent deployment:
+
+### Core Stacks
+
+1. **Cognito Stack** - User authentication and authorization
+2. **S3 Source Bucket Stack** - Document storage (project documents and artifacts)
+3. **ECR Stack** - Docker image repositories for agent deployments
+4. **Config Stack** - SSM Parameter Store and Secrets Manager configuration
+5. **IAM Stack** - IAM roles and policies for agents and services
+6. **AgentCore Runtime Stack** - AWS Bedrock AgentCore runtime deployments
+7. **Bedrock Data Automation Stack** - Document parsing and processing
+8. **Observability Stack** - CloudWatch, X-Ray, and monitoring
 
 ## Prerequisites
 
-- Node.js 24+
+### Required Tools
+
+- Node.js 18+ and npm
 - AWS CLI configured with appropriate credentials
-- AWS CDK CLI installed globally: `npm install -g aws-cdk`
+- AWS CDK CLI: `npm install -g aws-cdk`
+- Docker (for building and pushing images)
+- Python 3.12+ and UV (for agent code)
 
-## Project Structure
+### AWS Account Setup
 
-```
-infra/cdk/
-├── bin/
-│   └── bidopsai.ts          # CDK app entry point
-├── lib/
-│   ├── cognito-stack.ts     # Cognito User Pool stack
-│   └── s3-stack.ts          # S3 buckets stack
-├── cdk.json                 # CDK configuration
-├── tsconfig.json            # TypeScript configuration
-├── package.json             # Dependencies
-└── README.md                # This file
+1. **AWS Account**: Ensure you have an AWS account with appropriate permissions
+2. **AWS CLI Configuration**: Configure AWS CLI with credentials
+   ```bash
+   aws configure
+   ```
+3. **CDK Bootstrap**: Bootstrap CDK in your AWS account/region
+   ```bash
+   cd infra/cdk
+   cdk bootstrap aws://ACCOUNT-ID/REGION
+   ```
+
+### Environment Variables
+
+Create a `.env` file in the project root with the following variables:
+
+```bash
+# AWS Configuration
+AWS_ACCOUNT_ID=123456789012
+AWS_REGION=us-east-1
+CDK_DEFAULT_ACCOUNT=123456789012
+CDK_DEFAULT_REGION=us-east-1
+
+# Agent Versions (semantic versioning)
+APP_VERSION_WORKFLOW=1.0.0
+APP_VERSION_AI_ASSISTANT=1.0.0
+
+# Database Configuration (for local development)
+DATABASE_URL=postgresql://user:password@localhost:5432/bidopsai
 ```
 
 ## Installation
@@ -32,384 +66,400 @@ cd infra/cdk
 npm install
 ```
 
-## Available Commands
+## Deployment
+
+### Deploy All Stacks
+
+Deploy all stacks to the dev environment:
 
 ```bash
-# Synthesize CloudFormation templates
-npm run synth
-
-# Deploy all stacks (development)
-cdk deploy --all --context environment=dev
-
-# Deploy specific stacks
-npm run deploy:cognito     # Cognito only
-npm run deploy:s3          # S3 only
-
-# Deploy to specific environments
-cdk deploy --all --context environment=staging
-cdk deploy --all --context environment=prod
-
-# View differences before deployment
-npm run diff
-
-# Destroy stacks (development only)
-cdk destroy BidOpsAI-Cognito-dev
-cdk destroy BidOpsAI-S3SourceBucket-dev
+npm run deploy:dev
 ```
 
-## Deployment Guide
-
-### First-Time Setup
-
-1. **Bootstrap CDK** (one-time per account/region):
-   ```bash
-   cdk bootstrap aws://ACCOUNT-ID/REGION
-   ```
-
-2. **Configure Google OAuth** (Manual Step):
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create OAuth 2.0 Client ID
-   - Add authorized redirect URIs:
-     - Dev: `http://localhost:3000/api/auth/callback/cognito`
-     - Staging: `https://staging.bidopsai.com/api/auth/callback/cognito`
-     - Prod: `https://app.bidopsai.com/api/auth/callback/cognito`
-   - Save Client ID and Client Secret
-
-### Deploy to Development
+Deploy to staging:
 
 ```bash
-# Synthesize and review changes
-npm run synth
-
-# Deploy all stacks
-cdk deploy --all --context environment=dev
-
-# Or deploy individually
-npm run deploy:cognito
-npm run deploy:s3
+npm run deploy:staging
 ```
 
-### Deploy to Staging/Production
+Deploy to production:
 
 ```bash
-# Specify environment context
-cdk deploy --context environment=staging
-
-# Or use npm script
-npm run deploy:cognito -- --context environment=staging
+npm run deploy:prod
 ```
 
-## Stack Outputs
+### Deploy Specific Stacks
 
-After deployment, the stacks export the following outputs:
-
-### Cognito Stack Outputs
-
-| Output Name | Description | Example Value |
-|-------------|-------------|---------------|
-| `UserPoolId` | Cognito User Pool ID | `us-east-1_AbCdEfGhI` |
-| `UserPoolArn` | Cognito User Pool ARN | `arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_AbCdEfGhI` |
-| `UserPoolClientId` | User Pool Client ID | `1a2b3c4d5e6f7g8h9i0j` |
-| `UserPoolDomain` | Cognito hosted UI domain | `bidopsai-dev.auth.us-east-1.amazoncognito.com` |
-| `CognitoRegion` | AWS Region | `us-east-1` |
-
-### S3 Stack Outputs
-
-| Output Name | Description | Example Value |
-|-------------|-------------|---------------|
-| `ProjectDocumentsBucketName` | Project documents bucket | `bidopsai-project-documents-dev-123456789012` |
-| `ProjectDocumentsBucketArn` | Project documents bucket ARN | `arn:aws:s3:::bidopsai-project-documents-dev-123456789012` |
-| `ArtifactsBucketName` | Artifacts bucket | `bidopsai-artifacts-dev-123456789012` |
-| `ArtifactsBucketArn` | Artifacts bucket ARN | `arn:aws:s3:::bidopsai-artifacts-dev-123456789012` |
-| `AccessLogsBucketName` | Access logs bucket | `bidopsai-access-logs-dev-123456789012` |
-
-## Configuration
-
-### Environment Contexts
-
-The stack supports multiple environments via CDK context:
-
-- **dev** (default): Local development
-- **staging**: Staging environment
-- **prod**: Production environment
-
-Set environment using `--context`:
+Deploy only specific stacks:
 
 ```bash
-cdk deploy --context environment=prod
+# Deploy config and IAM stacks
+cdk deploy BidOpsAI-Config-dev BidOpsAI-IAM-dev -c environment=dev
+
+# Deploy AgentCore runtime
+cdk deploy BidOpsAI-AgentCore-dev -c environment=dev
 ```
 
-### Environment-Specific Settings
+### Stack Dependencies
 
-#### Development
-- Callback URLs: `http://localhost:3000/*`
-- Deletion protection: Disabled
-- Removal policy: DESTROY
-- Domain prefix: `bidopsai-dev`
+Stacks must be deployed in the following order:
 
-#### Staging
-- Callback URLs: `https://staging.bidopsai.com/*`
-- Deletion protection: Disabled
-- Removal policy: DESTROY
-- Domain prefix: `bidopsai-staging`
+1. Cognito, S3, ECR (can be deployed in parallel)
+2. Config
+3. IAM (depends on Config, S3, ECR)
+4. Data Automation (depends on S3)
+5. AgentCore Runtime (depends on IAM, ECR)
+6. Observability (depends on IAM)
 
-#### Production
-- Callback URLs: `https://app.bidopsai.com/*`
-- Deletion protection: Enabled
-- Removal policy: RETAIN
-- Domain prefix: `bidopsai-prod`
+## Agent Deployment Workflow
 
-## User Groups (RBAC)
+### 1. Build and Push Docker Images
 
-The Cognito User Pool includes 5 pre-configured groups:
-
-| Group | Precedence | Description |
-|-------|------------|-------------|
-| `ADMIN` | 1 | Full access to all features |
-| `DRAFTER` | 2 | Can work on drafts up to QA process |
-| `BIDDER` | 3 | Full workflow access + local KB management |
-| `KB_ADMIN` | 4 | Full CRUD access to all knowledge bases |
-| `KB_VIEW` | 5 | Read-only access to knowledge bases |
-
-## Password Policy
-
-- Minimum length: 12 characters
-- Requires: uppercase, lowercase, digits, symbols
-- Temporary password validity: 3 days
-
-## MFA Configuration
-
-- Mode: Optional
-- Methods: SMS and TOTP (authenticator app)
-
-## Post-Deployment Steps
-
-### 1. Configure Google OAuth Provider
-
-After stack deployment, configure Google as an identity provider:
+Before deploying AgentCore runtimes, build and push Docker images:
 
 ```bash
-# Get User Pool ID from stack outputs
-USER_POOL_ID=$(aws cloudformation describe-stacks \
-  --stack-name BidOpsAI-Cognito-dev \
-  --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
-  --output text)
+# Build and push both agents
+./scripts/deploy-to-ecr.sh dev
 
-# Create Google identity provider
-aws cognito-idp create-identity-provider \
-  --user-pool-id $USER_POOL_ID \
-  --provider-name Google \
-  --provider-type Google \
-  --provider-details \
-    client_id="YOUR_GOOGLE_CLIENT_ID",\
-    client_secret="YOUR_GOOGLE_CLIENT_SECRET",\
-    authorize_scopes="openid email profile" \
-  --attribute-mapping \
-    email=email,\
-    given_name=given_name,\
-    family_name=family_name,\
-    picture=picture,\
-    username=sub
+# Or build specific agents
+./scripts/deploy-to-ecr.sh dev workflow
+./scripts/deploy-to-ecr.sh dev ai-assistant
 ```
 
-### 2. Update Environment Variables
+### 2. Deploy AgentCore Runtimes
 
-#### Frontend (.env.local)
+After pushing images, deploy or update the AgentCore runtimes:
 
 ```bash
-# In apps/web/.env.local
-NEXT_PUBLIC_AWS_REGION=us-east-1
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=<UserPoolId>
-NEXT_PUBLIC_COGNITO_CLIENT_ID=<UserPoolClientId>
-NEXT_PUBLIC_COGNITO_DOMAIN=<UserPoolDomain>
-
-# For server-side auth
-AWS_REGION=us-east-1
-COGNITO_USER_POOL_ID=<UserPoolId>
-COGNITO_CLIENT_ID=<UserPoolClientId>
+cdk deploy BidOpsAI-AgentCore-dev -c environment=dev
 ```
 
-#### Backend (.env.development)
+### 3. Update Running Runtimes
+
+To update already deployed runtimes with new images:
 
 ```bash
-# In services/core-api/.env.development
-AWS_REGION=us-east-1
-AWS_S3_PROJECT_DOCUMENTS_BUCKET=<ProjectDocumentsBucketName>
-AWS_S3_ARTIFACTS_BUCKET=<ArtifactsBucketName>
-COGNITO_USER_POOL_ID=<UserPoolId>
-COGNITO_CLIENT_ID=<UserPoolClientId>
+# Update both agents
+./scripts/update-agentcore-runtime.sh dev
+
+# Update specific agent
+./scripts/update-agentcore-runtime.sh dev workflow
+./scripts/update-agentcore-runtime.sh dev ai-assistant
 ```
 
-### 3. Create Initial Admin User
+## Version Management
+
+### Bump Version
+
+Use the version bump script to increment versions:
 
 ```bash
-# Create admin user
-aws cognito-idp admin-create-user \
-  --user-pool-id $USER_POOL_ID \
-  --username admin@bidopsai.com \
-  --user-attributes \
-    Name=email,Value=admin@bidopsai.com \
-    Name=email_verified,Value=true \
-    Name=given_name,Value=Admin \
-    Name=family_name,Value=User \
-  --message-action SUPPRESS
+# Bump patch version for both agents
+./scripts/bump-version.sh both patch
 
-# Add to ADMIN group
-aws cognito-idp admin-add-user-to-group \
-  --user-pool-id $USER_POOL_ID \
-  --username admin@bidopsai.com \
-  --group-name ADMIN
+# Bump minor version for workflow agent only
+./scripts/bump-version.sh workflow minor
 
-# Set permanent password
-aws cognito-idp admin-set-user-password \
-  --user-pool-id $USER_POOL_ID \
-  --username admin@bidopsai.com \
-  --password "YourSecurePassword123!" \
-  --permanent
+# Bump major version for AI assistant
+./scripts/bump-version.sh ai-assistant major
 ```
 
-## Security Best Practices
+This script will:
+1. Update version numbers in `.env`
+2. Optionally create git tags
+3. Display next steps for deployment
 
-1. **Secrets Management**: Never commit AWS credentials or Google OAuth secrets
-2. **MFA**: Enable MFA for admin users
-3. **Password Rotation**: Enforce regular password changes in production
-4. **Advanced Security**: Stack uses AWS Advanced Security Mode (enforced)
-5. **Deletion Protection**: Enabled in production to prevent accidental deletion
+### Manual Version Update
+
+You can also manually update versions in `.env`:
+
+```bash
+APP_VERSION_WORKFLOW=1.2.3
+APP_VERSION_AI_ASSISTANT=1.1.0
+```
+
+## Stack Details
+
+### ECR Stack
+
+Creates two ECR repositories for Docker images:
+
+- `bidopsai-workflow-agent-{env}`
+- `bidopsai-ai-assistant-agent-{env}`
+
+**Features:**
+- Image scanning on push
+- Lifecycle policies (keep last 10 tagged, 5 untagged)
+- Tag immutability for prod/staging
+
+### Config Stack
+
+Manages configuration via SSM Parameter Store and Secrets Manager:
+
+**SSM Parameters:**
+- Agent configurations (temperature, max_tokens, model names)
+- Memory configurations (TTLs for different memory types)
+- Feature flags
+
+**Secrets:**
+- Database credentials
+- AWS credentials (for agents)
+- Slack webhook URLs
+- LangFuse API keys
+
+### IAM Stack
+
+Creates three IAM roles:
+
+1. **AgentCore Execution Role** - Base permissions for AgentCore
+2. **Workflow Agent Role** - Full read/write access for workflow operations
+3. **AI Assistant Agent Role** - Read-only access for conversational AI
+
+**Permissions include:**
+- Bedrock model invocation
+- Knowledge Base access
+- Data Automation
+- S3 read/write
+- RDS database access
+- CloudWatch Logs and X-Ray
+- SSM Parameter Store and Secrets Manager
+
+### AgentCore Runtime Stack
+
+Deploys two AgentCore runtimes using custom resources:
+
+1. **Workflow Agent Runtime** - Handles bid processing workflows
+2. **AI Assistant Agent Runtime** - Handles conversational AI
+
+**Features:**
+- Container-based deployment with ECR images
+- CloudWatch Logs integration
+- X-Ray tracing (prod/staging)
+- Automatic health checks
+
+### Bedrock Data Automation Stack
+
+Configures Bedrock Data Automation for document processing:
+
+**Features:**
+- Document parsing project
+- S3 integration for input/output
+- Character-based text splitting (8000 tokens, 10% overlap)
+- Separate processed documents bucket
+
+### Observability Stack
+
+Comprehensive monitoring and observability:
+
+**CloudWatch Logs:**
+- `/bidopsai/{env}/agents/workflow`
+- `/bidopsai/{env}/agents/ai-assistant`
+- `/bidopsai/{env}/system`
+
+**CloudWatch Metrics:**
+- Agent task executions and duration
+- Error rates
+- Workflow execution status
+- LLM invocations, token usage, and latency
+
+**CloudWatch Dashboard:**
+- Real-time metrics visualization
+- Log insights queries
+- Error tracking
+
+**Alarms (prod/staging):**
+- High error rate
+- Long task duration
+- High LLM latency
+
+**X-Ray Tracing:**
+- Distributed request tracing
+- Performance bottleneck identification
+
+## Environment-Specific Configuration
+
+### Development (dev)
+
+- Short log retention (1 month)
+- No tag immutability
+- Auto-delete resources on stack deletion
+- Detailed monitoring disabled
+- No alarms
+
+### Staging
+
+- Medium log retention (3 months)
+- Tag immutability for images
+- Resources retained on deletion
+- Detailed monitoring enabled
+- Alarms configured
+
+### Production (prod)
+
+- Long log retention (6 months)
+- Tag immutability for images
+- All resources retained on deletion
+- Detailed monitoring enabled
+- Alarms configured with lower thresholds
+- Additional backup policies
+
+## Monitoring and Troubleshooting
+
+### View CloudWatch Dashboard
+
+```bash
+# Get dashboard URL from stack outputs
+aws cloudformation describe-stacks \
+  --stack-name BidOpsAI-Observability-dev \
+  --query 'Stacks[0].Outputs[?OutputKey==`DashboardUrl`].OutputValue' \
+  --output text
+```
+
+### View Logs
+
+```bash
+# Workflow agent logs
+aws logs tail /bidopsai/dev/agents/workflow --follow
+
+# AI Assistant logs
+aws logs tail /bidopsai/dev/agents/ai-assistant --follow
+
+# System logs
+aws logs tail /bidopsai/dev/system --follow
+```
+
+### Check AgentCore Runtime Status
+
+```bash
+aws bedrock describe-agent-runtime \
+  --runtime-identifier bidopsai-workflow-agent-dev \
+  --region us-east-1
+```
+
+### View X-Ray Traces
+
+```bash
+# Get X-Ray service map
+aws xray get-service-graph \
+  --start-time $(date -u -d '1 hour ago' +%s) \
+  --end-time $(date -u +%s)
+```
+
+## Cleanup
+
+### Destroy Stacks
+
+To remove all resources:
+
+```bash
+# Destroy all stacks (dev only)
+cdk destroy --all -c environment=dev
+
+# Destroy specific stacks
+cdk destroy BidOpsAI-AgentCore-dev -c environment=dev
+```
+
+**Warning:** Production resources have `RemovalPolicy.RETAIN` and will not be deleted automatically.
+
+### Manual Cleanup
+
+For production resources, you may need to manually:
+
+1. Empty S3 buckets
+2. Delete ECR images
+3. Remove CloudWatch log groups (if desired)
+4. Delete Secrets Manager secrets
+
+## Cost Optimization
+
+### Cost-Saving Tips
+
+1. **Use dev environment for testing** - Lower retention, auto-delete
+2. **Monitor LLM token usage** - Track via CloudWatch metrics
+3. **Set up budget alerts** - AWS Budgets for cost monitoring
+4. **Clean up old images** - ECR lifecycle policies handle this automatically
+5. **Use spot instances** - For non-critical workloads (not applicable to AgentCore)
+
+### Estimated Monthly Costs (dev environment)
+
+- ECR: $0.10/GB stored
+- S3: $0.023/GB stored
+- CloudWatch Logs: $0.50/GB ingested
+- Bedrock models: Pay per token usage
+- AgentCore Runtime: Based on compute hours
 
 ## Troubleshooting
 
-### CDK Bootstrap Issues
+### Common Issues
 
-If you see "CDK bootstrap required" error:
+**Issue: CDK deploy fails with "IAM role not found"**
+- Solution: Ensure IAM stack is deployed first
+- Run: `cdk deploy BidOpsAI-IAM-dev -c environment=dev`
 
-```bash
-cdk bootstrap aws://ACCOUNT-ID/REGION
-```
+**Issue: AgentCore runtime fails to start**
+- Check Docker images are pushed to ECR
+- Verify IAM role permissions
+- Check CloudWatch logs for errors
 
-### Import Errors
+**Issue: "Cannot find module" errors during build**
+- Run `npm install` in `infra/cdk` directory
+- Ensure all dependencies are installed
 
-If you see TypeScript import errors:
+**Issue: X-Ray traces not appearing**
+- Verify X-Ray permissions in IAM role
+- Check X-Ray daemon is running (built into AgentCore)
+- Enable tracing in AgentCore configuration
 
-```bash
-cd infra/cdk
-npm install
-npm run build
-```
+## Scripts Reference
 
-### Stack Already Exists
+### deploy-to-ecr.sh
 
-If redeploying an existing stack:
-
-```bash
-# View changes first
-npm run diff
-
-# Deploy with confirmation
-cdk deploy --require-approval never
-```
-
-### Google OAuth Not Working
-
-1. Verify Google OAuth client configuration
-2. Check callback URLs match exactly
-3. Ensure identity provider is created in Cognito
-4. Verify scopes include `openid email profile`
-
-## Clean Up
-
-### Development Environment
+Build and push Docker images to ECR.
 
 ```bash
-cdk destroy BidOpsAI-Cognito-dev
+./scripts/deploy-to-ecr.sh <environment> [agent_type]
+
+# Examples
+./scripts/deploy-to-ecr.sh dev
+./scripts/deploy-to-ecr.sh prod workflow
 ```
 
-### Production Environment
+### update-agentcore-runtime.sh
 
-⚠️ **Warning**: Production stacks have deletion protection enabled. To destroy:
+Update running AgentCore runtimes with new images.
 
-1. First, disable deletion protection:
-   ```bash
-   # Manually via AWS Console or update stack with deletionProtection: false
-   ```
+```bash
+./scripts/update-agentcore-runtime.sh <environment> [agent_type]
 
-2. Then destroy:
-   ```bash
-   cdk destroy BidOpsAI-Cognito-prod
-   ```
+# Examples
+./scripts/update-agentcore-runtime.sh dev
+./scripts/update-agentcore-runtime.sh staging workflow
+```
 
-## S3 Stack Details
+### bump-version.sh
 
-### Buckets
+Increment semantic versions and create git tags.
 
-1. **Project Documents Bucket**
-   - Purpose: Store raw and processed project documents
-   - Path structure: `yyyy/mm/dd/hh/<project_name>_<timestamp>/`
-   - Features: Versioning, lifecycle policies, encryption at rest
-   - CORS: Enabled for direct browser uploads
+```bash
+./scripts/bump-version.sh <agent_type> <bump_type>
 
-2. **Artifacts Bucket**
-   - Purpose: Store generated artifacts (Word, PDF, Excel, PPT)
-   - Features: Versioning, lifecycle policies, encryption at rest
-   - Access: Backend API writes, frontend reads via presigned URLs
+# Examples
+./scripts/bump-version.sh both patch
+./scripts/bump-version.sh workflow minor
+./scripts/bump-version.sh ai-assistant major
+```
 
-3. **Access Logs Bucket**
-   - Purpose: Store access logs for compliance and auditing
-   - Retention: 90 days (dev), 365 days (staging/prod)
-   - No public access
+## Additional Resources
 
-### Lifecycle Policies
-
-#### Development
-- Raw documents → Intelligent-Tiering after 30 days
-- Processed documents → Glacier after 90 days
-- Old versions deleted after 30 days
-
-#### Production
-- Raw documents → Intelligent-Tiering after 90 days
-- Processed documents → Glacier after 180 days
-- Old versions deleted after 90 days
-
-### Security Features
-
-- Block all public access by default
-- Server-side encryption with S3-managed keys (SSE-S3)
-- Versioning enabled for data protection
-- HTTPS-only access via bucket policies
-- CORS configured for trusted origins only
-- Access logging enabled for audit trails
-
-### Integration with GraphQL API
-
-The S3 stack integrates with the core-api GraphQL service:
-
-1. **Document Upload Flow**:
-   - Frontend calls `generatePresignedUrls` mutation
-   - API generates signed URLs for direct S3 upload
-   - Frontend uploads files directly to S3
-   - Frontend calls `createProjectDocument` mutation with S3 locations
-
-2. **Artifact Export Flow**:
-   - Supervisor Agent exports artifacts to S3
-   - API updates ArtifactVersion records with S3 locations
-   - Frontend fetches artifacts via presigned URLs
-
-## Future Stacks
-
-This CDK app will be extended to include:
-
-- **RDS Stack**: PostgreSQL database with automated backups
-- **ECS Stack**: Container orchestration for core-api service
-- **AgentCore Stack**: Bedrock AgentCore deployment
-- **Monitoring Stack**: CloudWatch dashboards and alarms
-- **VPC Stack**: Network infrastructure for secure communication
+- [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/)
+- [AWS Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/)
+- [Strands Agents Documentation](https://github.com/awslabs/multi-agent-orchestrator)
+- [AWS X-Ray Developer Guide](https://docs.aws.amazon.com/xray/)
 
 ## Support
 
 For issues or questions:
-- Check AWS CDK documentation: https://docs.aws.amazon.com/cdk/
-- Review Cognito documentation: https://docs.aws.amazon.com/cognito/
-- Open an issue in the project repository
-
-## License
-
-Copyright © 2025 BidOps.AI. All rights reserved.
+1. Check CloudWatch logs for error messages
+2. Review X-Ray traces for performance issues
+3. Check AWS Health Dashboard for service issues
+4. Consult the troubleshooting section above

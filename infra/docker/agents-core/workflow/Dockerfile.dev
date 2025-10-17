@@ -1,0 +1,69 @@
+# =============================================================================
+# BidOpsAI Workflow Supervisor Agent - Development Dockerfile
+# =============================================================================
+# This Dockerfile is optimized for local development with hot-reload support
+# Uses UV for fast dependency installation and Python 3.12+
+
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    UV_CACHE_DIR=/root/.cache/uv
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    gcc \
+    g++ \
+    make \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV package manager
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Copy only dependency files first (for layer caching)
+COPY agents-core/pyproject.toml agents-core/uv.lock* ./
+
+# Install dependencies with UV
+RUN uv pip install --system -r pyproject.toml --all-extras
+
+# Install development tools
+RUN uv pip install --system debugpy ipython ipdb
+
+# Copy application code
+COPY agents-core/ ./
+
+# Create necessary directories
+RUN mkdir -p logs temp
+
+# Expose port for FastAPI
+EXPOSE 8001
+
+# Expose port for debugpy (optional)
+EXPOSE 5678
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run with uvicorn and hot-reload
+CMD ["uvicorn", "supervisors.workflow.agent_executor:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8001", \
+     "--reload", \
+     "--reload-dir", "agents", \
+     "--reload-dir", "supervisors", \
+     "--reload-dir", "tools", \
+     "--reload-dir", "prompts", \
+     "--reload-dir", "models", \
+     "--reload-dir", "core", \
+     "--log-level", "debug"]

@@ -93,8 +93,122 @@ services:
       retries: 3
       start_period: 40s
 
+  # LocalStack for S3 (local AWS services)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: bidopsai-localstack-dev
+    ports:
+      - "4566:4566"  # LocalStack gateway
+      - "4571:4571"  # LocalStack S3
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack-data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - bidopsai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Workflow Supervisor Agent
+  workflow-agent:
+    build:
+      context: ../../
+      dockerfile: infra/docker/agents-core/workflow/Dockerfile.dev
+    container_name: bidopsai-workflow-agent-dev
+    ports:
+      - "8001:8001"
+    volumes:
+      # Mount source code for hot reload
+      - ../../agents-core:/app
+      # Preserve Python cache and UV cache
+      - workflow-uv-cache:/root/.cache/uv
+      - workflow-pytest-cache:/app/.pytest_cache
+    env_file:
+      - ../../agents-core/.env.development
+    environment:
+      # Override database and S3 URLs for Docker network
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bidopsai}:${POSTGRES_PASSWORD:-bidopsai_dev_password}@postgres:5432/${POSTGRES_DB:-bidopsai}
+      - S3_ENDPOINT_URL=http://localstack:4566
+      - WORKFLOW_HOST=0.0.0.0
+      - WORKFLOW_PORT=8001
+      - LOG_LEVEL=DEBUG
+      - UVICORN_RELOAD=true
+    networks:
+      - bidopsai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # AI Assistant Supervisor Agent (Future)
+  ai-assistant-agent:
+    build:
+      context: ../../
+      dockerfile: infra/docker/agents-core/ai_assistant/Dockerfile.dev
+    container_name: bidopsai-ai-assistant-agent-dev
+    ports:
+      - "8002:8002"
+    volumes:
+      # Mount source code for hot reload
+      - ../../agents-core:/app
+      # Preserve Python cache and UV cache
+      - ai-assistant-uv-cache:/root/.cache/uv
+      - ai-assistant-pytest-cache:/app/.pytest_cache
+    env_file:
+      - ../../agents-core/.env.development
+    environment:
+      # Override database and S3 URLs for Docker network
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bidopsai}:${POSTGRES_PASSWORD:-bidopsai_dev_password}@postgres:5432/${POSTGRES_DB:-bidopsai}
+      - S3_ENDPOINT_URL=http://localstack:4566
+      - AI_ASSISTANT_HOST=0.0.0.0
+      - AI_ASSISTANT_PORT=8002
+      - LOG_LEVEL=DEBUG
+      - UVICORN_RELOAD=true
+    networks:
+      - bidopsai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - ai-assistant  # Only start with --profile ai-assistant
+
 volumes:
   postgres-data:
+    driver: local
+  localstack-data:
+    driver: local
+  workflow-uv-cache:
+    driver: local
+  workflow-pytest-cache:
+    driver: local
+  ai-assistant-uv-cache:
+    driver: local
+  ai-assistant-pytest-cache:
     driver: local
 
 networks:
