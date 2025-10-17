@@ -163,7 +163,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::568790270051:role/aws-hackathon-github-actions
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -194,8 +194,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_AGENT_CORE_URL=${{ secrets.NEXT_PUBLIC_AGENT_CORE_URL }}
+            NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_AGENT_CORE_URL=${{ env.NEXT_PUBLIC_AGENT_CORE_URL }}
             NEXT_PUBLIC_AWS_REGION=${{ env.AWS_REGION }}
             NEXT_PUBLIC_COGNITO_USER_POOL_ID=${{ secrets.NEXT_PUBLIC_COGNITO_USER_POOL_ID }}
             NEXT_PUBLIC_COGNITO_CLIENT_ID=${{ secrets.NEXT_PUBLIC_COGNITO_CLIENT_ID }}
@@ -218,7 +218,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::568790270051:role/aws-hackathon-github-actions
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
