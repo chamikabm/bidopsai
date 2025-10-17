@@ -1,6 +1,15 @@
-# GitHub Actions CI/CD Workflow Documentation
+# CI/CD Pipeline Documentation
 
 ## Overview
+
+This pipeline builds and pushes Docker images for all BidOps.AI services to Amazon ECR.
+
+**Services:**
+- **Frontend (web)**: Next.js application → `bidopsai-web`
+- **Backend API (core-api)**: GraphQL API → `bidopsai-core-api`
+- **AgentCore (agent)**: Python AI agents → `bidopsai-agentcore`
+
+## Pipeline Overview
 
 This workflow provides a comprehensive CI/CD pipeline for the BidOps.AI project, including:
 
